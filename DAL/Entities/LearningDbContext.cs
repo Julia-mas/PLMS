@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace PLMS.DAL
+namespace PMLS.DAL.Entities
 {
-    public class LearningDbContext: DbContext
+    public class LearningDbContext : DbContext
     {
         public LearningDbContext(DbContextOptions<LearningDbContext> options) : base(options)
         {

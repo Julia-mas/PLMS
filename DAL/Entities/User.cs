@@ -1,4 +1,4 @@
-﻿namespace PLMS.DAL
+﻿namespace PMLS.DAL.Entities
 {
     public class User
     {
