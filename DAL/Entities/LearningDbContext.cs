@@ -1,12 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace PMLS.DAL.Entities
 {
     public class LearningDbContext : DbContext
     {
+        public static readonly ILoggerFactory MyLoggerFactory = LoggerFactory.Create(builder => { builder.AddConsole(); });
+
         public LearningDbContext(DbContextOptions<LearningDbContext> options) : base(options)
         {
         }
+
         public DbSet<User> Users => Set<User>();
         public DbSet<Goal> Goals => Set<Goal>();
         public DbSet<Task> Tasks => Set<Task>();
@@ -91,6 +95,15 @@ namespace PMLS.DAL.Entities
                 new Priority { Id = 2, Title = "Medium" },
                 new Priority { Id = 3, Title = "High" }
             );
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+                optionsBuilder.UseLoggerFactory(MyLoggerFactory);
+            }
+            base.OnConfiguring(optionsBuilder);
         }
     }
 }
