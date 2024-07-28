@@ -17,12 +17,12 @@ namespace PLMS.DAL.Implementation
 
         public IQueryable<T> GetAll() => _db.Set<T>().AsQueryable();
 
-        public Task<T> GetByPredicateAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes)
+        public Task<T?> GetByPredicateAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes)
         {
             return _db.Set<T>().IncludeMultiple(includes).FirstOrDefaultAsync(predicate);
         }
 
-        public async Task<T> GetByIdAsync<TId>(TId id) => await _db.Set<T>().FindAsync(id);
+        public async Task<T?> GetByIdAsync<TId>(TId id) => await _db.Set<T>().FindAsync(id);
 
         public void Create(T item) => _db.Set<T>().Add(item);
 
@@ -31,5 +31,31 @@ namespace PLMS.DAL.Implementation
         public void RemoveRange(IEnumerable<T> entities) => _db.Set<T>().RemoveRange(entities);
 
         public void Update(T item) => _db.Entry(item).State = EntityState.Modified;
+
+        public async Task<IQueryable<T>> GetFilteredAsync(Expression<Func<T, bool>>? filter = null,
+            Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null, string includeProperties = "")
+        {
+            IQueryable<T> query = _db.Set<T>();
+
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+
+            if (!string.IsNullOrEmpty(includeProperties))
+            {
+                foreach (var property in includeProperties.Split(",", StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query.Include(property);
+                }
+            }
+
+            if (orderBy != null)
+            {
+                query =  orderBy(query);
+            }
+            
+            return await System.Threading.Tasks.Task.FromResult(query); 
+        }
     }
 }
