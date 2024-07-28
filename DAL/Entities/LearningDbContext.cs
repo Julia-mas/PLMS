@@ -1,9 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace PMLS.DAL.Entities
 {
-    public class LearningDbContext : DbContext
+    public class LearningDbContext : IdentityDbContext<User>
     {
         public static readonly ILoggerFactory MyLoggerFactory = LoggerFactory.Create(builder => { builder.AddConsole(); });
 
@@ -11,7 +12,7 @@ namespace PMLS.DAL.Entities
         {
         }
 
-        public DbSet<User> Users => Set<User>();
+        public DbSet<User> Users { get; set; }
         public DbSet<Goal> Goals => Set<Goal>();
         public DbSet<Task> Tasks => Set<Task>();
         public DbSet<Category> Categories => Set<Category>();
@@ -23,12 +24,6 @@ namespace PMLS.DAL.Entities
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.Goals)
-                .WithOne(g => g.User)
-                .HasForeignKey(g => g.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<User>()
                 .HasMany(u => u.Categories)

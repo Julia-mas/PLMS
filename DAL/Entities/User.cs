@@ -1,11 +1,11 @@
-﻿namespace PMLS.DAL.Entities
+﻿using Microsoft.AspNetCore.Identity;
+
+namespace PMLS.DAL.Entities
 {
-    public class User
+    public class User: IdentityUser
     {
-        public int Id { get; set; }
         public string Name { get; set; } = null!;
         public string Surname { get; set; } = null!;
-        public string? Email { get; set; }
 
         // Navigation property
         public ICollection<Goal> Goals { get; set; } = new List<Goal>();

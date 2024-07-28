@@ -12,6 +12,7 @@
         public int PriorityId { get; set; }
 
         public Goal Goal { get; set; } = null!;
+
         public Status Status { get; set; } = null!;
         public Priority Priority { get; set; } = null!;
 

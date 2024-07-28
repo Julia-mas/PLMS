@@ -1,6 +1,7 @@
 ﻿using Autofac;
+using Microsoft.OpenApi.Models;
 using PLMS.DI.Modules;
-
+using PMLS.DAL.Entities;
 
 namespace PLMS
 {
@@ -15,12 +16,19 @@ namespace PLMS
 
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddDefaultIdentity<User>(options => options.SignIn.RequireConfirmedAccount = false)
+            .AddEntityFrameworkStores<LearningDbContext>();
+
             services.AddControllers();
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "PLMS API", Version = "v1" });
+            });
         }
         public void ConfigureContainer(ContainerBuilder builder)
         {
-            builder.RegisterModule(new ApiModule());
             builder.RegisterModule(new DalModule(Configuration));
+            builder.RegisterModule(new ApiModule());
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -37,7 +45,16 @@ namespace PLMS
 
             app.UseHttpsRedirection();
             app.UseRouting();
+            app.UseAuthentication();
             app.UseAuthorization();
+
+            app.UseSwagger();
+
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "PLMS API v1");
+                c.RoutePrefix = string.Empty;
+            });
 
             app.UseEndpoints(endpoints =>
             {

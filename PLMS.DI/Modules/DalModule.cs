@@ -1,4 +1,6 @@
 ﻿using Autofac;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PLMS.DAL.Implementation;
@@ -25,6 +27,9 @@ namespace PLMS.DI.Modules
                 .SingleInstance();
 
             builder.RegisterType<LearningDbContext>().AsSelf().InstancePerLifetimeScope();
+
+            
+
             builder.RegisterType<UnitOfWork>().As<IUnitOfWork>().InstancePerLifetimeScope();
             builder.RegisterGeneric(typeof(Repository<>)).As(typeof(IRepository<>)).InstancePerLifetimeScope();
         }

@@ -9,7 +9,7 @@
         public DateTime DueDate { get; set; }
         public int StatusId { get; set; }
         public int PriorityId { get; set; }
-        public int UserId { get; set; }
+        public string UserId { get; set; } = null!;
         public int CategoryId { get; set; }
 
         // Navigation properties
