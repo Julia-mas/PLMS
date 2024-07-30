@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DAL\PLMS.DAL.csproj" />
+    <ProjectReference Include="..\PLMS.BLL\PLMS.BLL.csproj" />
     <ProjectReference Include="..\PLMS.DI\PLMS.DI.csproj" />
   </ItemGroup>
 

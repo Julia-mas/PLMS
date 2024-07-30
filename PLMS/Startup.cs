@@ -1,7 +1,7 @@
 ﻿using Autofac;
 using Microsoft.OpenApi.Models;
 using PLMS.DI.Modules;
-using PMLS.DAL.Entities;
+using PLMS.DAL.Entities;
 
 namespace PLMS
 {
@@ -28,6 +28,7 @@ namespace PLMS
         public void ConfigureContainer(ContainerBuilder builder)
         {
             builder.RegisterModule(new DalModule(Configuration));
+            builder.RegisterModule(new BllModule());
             builder.RegisterModule(new ApiModule());
         }
 

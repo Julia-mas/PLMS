@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using PLMS.DAL.Interfaces;
-using PMLS.DAL.Entities;
+using PLMS.DAL.Entities;
 using Task = System.Threading.Tasks.Task;
 
 namespace PLMS.DAL.Implementation

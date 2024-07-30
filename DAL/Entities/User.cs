@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 
-namespace PMLS.DAL.Entities
+namespace PLMS.DAL.Entities
 {
     public class User: IdentityUser
     {

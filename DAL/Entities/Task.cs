@@ -1,4 +1,4 @@
-﻿namespace PMLS.DAL.Entities
+﻿namespace PLMS.DAL.Entities
 {
     public class Task
     {
@@ -10,7 +10,6 @@
         public DateTime DueDate { get; set; }
         public int StatusId { get; set; }
         public int PriorityId { get; set; }
-
         public Goal Goal { get; set; } = null!;
 
         public Status Status { get; set; } = null!;

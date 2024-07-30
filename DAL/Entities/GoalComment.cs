@@ -1,4 +1,4 @@
-﻿namespace PMLS.DAL.Entities
+﻿namespace PLMS.DAL.Entities
 {
     public class GoalComment
     {

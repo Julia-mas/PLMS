@@ -1,11 +1,11 @@
 ﻿using Autofac;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using PLMS.DAL.Implementation;
 using PLMS.DAL.Interfaces;
-using PMLS.DAL.Entities;
+using PLMS.DAL.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 namespace PLMS.DI.Modules
 {
@@ -28,7 +28,11 @@ namespace PLMS.DI.Modules
 
             builder.RegisterType<LearningDbContext>().AsSelf().InstancePerLifetimeScope();
 
-            
+            builder.RegisterType<UserStore<User>>().As<IUserStore<User>>()
+                .WithParameter((pi, ctx) => pi.ParameterType == typeof(DbContext), (pi, ctx) => ctx.Resolve<LearningDbContext>())
+                .InstancePerLifetimeScope();
+            builder.RegisterType<UserManager<User>>().AsSelf().InstancePerLifetimeScope();
+            builder.RegisterType<SignInManager<User>>().AsSelf().InstancePerLifetimeScope();
 
             builder.RegisterType<UnitOfWork>().As<IUnitOfWork>().InstancePerLifetimeScope();
             builder.RegisterGeneric(typeof(Repository<>)).As(typeof(IRepository<>)).InstancePerLifetimeScope();

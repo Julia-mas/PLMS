@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PLMS.DAL.Extensions;
 using PLMS.DAL.Interfaces;
-using PMLS.DAL.Entities;
+using PLMS.DAL.Entities;
 using System.Linq.Expressions;
 
 namespace PLMS.DAL.Implementation

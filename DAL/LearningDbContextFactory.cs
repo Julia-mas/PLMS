@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using PMLS.DAL.Entities;
+using PLMS.DAL.Entities;
 
 
 namespace PLMS.DAL

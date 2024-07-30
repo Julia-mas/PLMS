@@ -1,4 +1,4 @@
-﻿namespace PLMS.DAL.Filters
+﻿namespace PLMS.BLL.Filters
 {
     public class BaseFilter
     {

@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace PMLS.DAL.Entities
+namespace PLMS.DAL.Entities
 {
     public class LearningDbContext : IdentityDbContext<User>
     {

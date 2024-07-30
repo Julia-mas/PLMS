@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using PLMS.API.Models;
-using PMLS.DAL.Entities;
+using PLMS.DAL.Entities;
 
 namespace PLMS.API.Controllers
 {
