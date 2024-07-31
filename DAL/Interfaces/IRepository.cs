@@ -10,7 +10,7 @@ namespace PLMS.DAL.Interfaces
         
         Task<T> GetByIdAsync<TId>(TId id);
         
-        void Create(T item);
+        Task CreateAsync(T item);
         
         void Remove(T item);
         

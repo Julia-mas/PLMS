@@ -1,5 +1,7 @@
 ﻿namespace PLMS.BLL.Filters
 {
+    //TODO: this should be a specific filter like TaskTilter
+    //because all the fields are related to the Task entity;
     public class MyItemFilter: BaseFilter
     {
         public enum MyItemSortFields

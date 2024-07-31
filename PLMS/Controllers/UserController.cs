@@ -23,6 +23,7 @@ namespace PLMS.API.Controllers
         {
             if (!ModelState.IsValid)
             {
+                //ToDo: mb use unified response instead of anonimus object
                 return BadRequest(new { IsSuccess = false, Message = ModelState.Values.First().Errors.First().ErrorMessage });
             }
 
@@ -60,7 +61,7 @@ namespace PLMS.API.Controllers
 
             var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, model.RememberMe, lockoutOnFailure: false);
 
-            if (result.Succeeded)
+            if (result.Succeeded)//ToDo: Return tokens
             {
                 return Ok(new { IsSuccess = true, Message = "User logged in successfully." });
             }

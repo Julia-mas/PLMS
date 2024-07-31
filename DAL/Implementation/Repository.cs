@@ -3,6 +3,7 @@ using PLMS.DAL.Extensions;
 using PLMS.DAL.Interfaces;
 using PLMS.DAL.Entities;
 using System.Linq.Expressions;
+using Task = System.Threading.Tasks.Task;
 
 namespace PLMS.DAL.Implementation
 {
@@ -24,7 +25,7 @@ namespace PLMS.DAL.Implementation
 
         public async Task<T?> GetByIdAsync<TId>(TId id) => await _db.Set<T>().FindAsync(id);
 
-        public void Create(T item) => _db.Set<T>().Add(item);
+        public async Task CreateAsync(T item) => await _db.Set<T>().AddAsync(item);
 
         public void Remove(T item) => _db.Set<T>().Remove(item);
 
@@ -32,8 +33,10 @@ namespace PLMS.DAL.Implementation
 
         public void Update(T item) => _db.Entry(item).State = EntityState.Modified;
 
-        public async Task<IQueryable<T>> GetFilteredAsync(Expression<Func<T, bool>>? filter = null,
-            Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null, string includeProperties = "")
+        public async Task<IQueryable<T>> GetFilteredAsync(
+            Expression<Func<T, bool>>? filter = null,
+            Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
+            string includeProperties = "")
         {
             IQueryable<T> query = _db.Set<T>();
 
@@ -52,10 +55,10 @@ namespace PLMS.DAL.Implementation
 
             if (orderBy != null)
             {
-                query =  orderBy(query);
+                query = orderBy(query);
             }
-            
-            return await System.Threading.Tasks.Task.FromResult(query); 
+
+            return query;
         }
     }
 }
