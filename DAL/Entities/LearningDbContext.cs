@@ -12,13 +12,18 @@ namespace PLMS.DAL.Entities
         {
         }
 
-        public DbSet<User> Users { get; set; }
         public DbSet<Goal> Goals => Set<Goal>();
+
         public DbSet<Task> Tasks => Set<Task>();
+
         public DbSet<Category> Categories => Set<Category>();
+
         public DbSet<GoalComment> GoalComments => Set<GoalComment>();
+
         public DbSet<TaskComment> TaskComments => Set<TaskComment>();
+
         public DbSet<Status> Statuses => Set<Status>();
+
         public DbSet<Priority> Priorities => Set<Priority>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

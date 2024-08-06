@@ -1,6 +1,6 @@
-﻿namespace PLMS.DAL.Entities
+﻿namespace PLMS.API.Models.ModelsTasks
 {
-    public class Task
+    public class GetTaskModel
     {
         public int Id { get; set; }
         public string Title { get; set; } = null!;
@@ -10,10 +10,6 @@
         public DateTime DueDate { get; set; }
         public int StatusId { get; set; }
         public int PriorityId { get; set; }
-
-        public Goal Goal { get; set; } = new Goal();
-        public Status Status { get; set; } =  new Status();
-        public Priority Priority { get; set; } = new Priority();
-        public ICollection<TaskComment> TaskComments { get; set; } = new List<TaskComment>();
     }
 }
+

@@ -14,9 +14,9 @@
 
         // Navigation properties
         public User User { get; set; } = null!;
-        public Category Category { get; set; } = null!;
-        public Status Status { get; set; } = null!;
-        public Priority Priority { get; set; } = null!;
+        public Category Category { get; set; } = new();
+        public Status Status { get; set; } = new();
+        public Priority Priority { get; set; } = new();
         public ICollection<Task> Tasks { get; set; } = new List<Task>();
         public ICollection<GoalComment> GoalComments { get; set; } = new List<GoalComment>();
     }
