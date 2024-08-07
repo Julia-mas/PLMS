@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using PLMS.API.ApiHelper;
 using PLMS.API.Models;
 using PLMS.DAL.Entities;
 
@@ -23,8 +24,7 @@ namespace PLMS.API.Controllers
         {
             if (!ModelState.IsValid)
             {
-                //ToDo: mb use unified response instead of anonimus object
-                return BadRequest(new { IsSuccess = false, Message = ModelState.Values.First().Errors.First().ErrorMessage });
+                return ApiResponseHelper.CreateErrorResponse(ModelState);
             }
 
             var user = new User 
@@ -39,10 +39,11 @@ namespace PLMS.API.Controllers
 
             if (result.Succeeded)
             {
-                return Ok(new { IsSuccess = true, Message = "User registered successfully." });
+                var token = await _userManager.GenerateUserTokenAsync(user, "Default", "access_token");
+                return ApiResponseHelper.CreateResponse(true, "User registered successfully", 200, token);
             }
-
-            return BadRequest(new { IsSuccess = false, Message = string.Join(", ", result.Errors.Select(e => e.Description)) });
+            var errors = result.Errors.Select(e => e.Description).ToList();
+            return ApiResponseHelper.CreateResponse(false, string.Join(", ", errors).ToString(), 500);
         }
 
         [HttpPost("Login")]
@@ -50,35 +51,36 @@ namespace PLMS.API.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(new { IsSuccess = false, Message = ModelState.Values.First().Errors.First().ErrorMessage });
+                return ApiResponseHelper.CreateErrorResponse(ModelState);
             }
 
             var user = await _userManager.FindByNameAsync(model.Username);
             if (user == null)
             {
-                return Unauthorized(new { isSuccess = false, message = "Invalid login attempt." });
+                return ApiResponseHelper.CreateResponse(false, "Invalid login attempt.", 401);
             }
 
             var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, model.RememberMe, lockoutOnFailure: false);
 
-            if (result.Succeeded)//ToDo: Return tokens
+            if (result.Succeeded)
             {
-                return Ok(new { IsSuccess = true, Message = "User logged in successfully." });
+                var token = await _userManager.GenerateUserTokenAsync(user, "Default", "access_token");
+                return ApiResponseHelper.CreateResponse(true, "User logged in successfully.", 200, token);
             }
 
             if (result.IsLockedOut)
             {
-                return Unauthorized(new { IsSuccess = false, Message = "User account locked out." });
+                return ApiResponseHelper.CreateResponse(false, "User account locked out.", 401);
             }
 
-            return Unauthorized(new { IsSuccess = false, Message = "Invalid login attempt." });
+            return ApiResponseHelper.CreateResponse(false, "Invalid login attempt.", 401);
         }
 
         [HttpPost("Logout")]
         public async Task<ActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
-            return Ok(new { IsSuccess = true, Message = "User logged out successfully." });
+            return ApiResponseHelper.CreateResponse(true, "User logged out successfully.");
         }
 
         [HttpPost("ForgotPassword")]
@@ -87,7 +89,7 @@ namespace PLMS.API.Controllers
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
-                return NotFound(new { IsSuccess = false, Message = "Email not found." });
+                return ApiResponseHelper.CreateResponse(false, "Email not found.", 400);
             }
 
             var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);

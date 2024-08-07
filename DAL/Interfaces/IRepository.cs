@@ -7,7 +7,7 @@ namespace PLMS.DAL.Interfaces
         IQueryable<T> GetAll();
 
         Task<T> GetByPredicateAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes);
-        
+
         Task<T> GetByIdAsync<TId>(TId id);
         
         Task CreateAsync(T item);

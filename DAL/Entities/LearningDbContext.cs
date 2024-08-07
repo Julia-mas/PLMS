@@ -12,7 +12,6 @@ namespace PLMS.DAL.Entities
         {
         }
 
-        public DbSet<User> Users { get; set; }
         public DbSet<Goal> Goals => Set<Goal>();
         public DbSet<Task> Tasks => Set<Task>();
         public DbSet<Category> Categories => Set<Category>();

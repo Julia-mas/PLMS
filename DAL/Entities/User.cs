@@ -7,6 +7,7 @@ namespace PLMS.DAL.Entities
         public string Name { get; set; } = null!;
         public string Surname { get; set; } = null!;
 
+
         // Navigation property
         public ICollection<Goal> Goals { get; set; } = new List<Goal>();
         public ICollection<Category> Categories { get; set; } = new List<Category>();

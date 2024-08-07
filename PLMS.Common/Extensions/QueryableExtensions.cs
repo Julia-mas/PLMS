@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
-namespace PLMS.DAL.Extensions
+namespace PLMS.Common.Extensions
 {
     public static class QueryableExtensions
     {

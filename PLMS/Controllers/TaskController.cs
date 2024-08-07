@@ -1,115 +1,159 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PLMS.API.ApiHelper;
+using PLMS.API.Models.ModelsTasks;
+using PLMS.BLL.DTO;
 using PLMS.BLL.Filters;
 using PLMS.BLL.ServicesInterfaces;
-using PLMS.BLL.DTO;
-using Microsoft.AspNetCore.Authorization;
+using PLMS.Common.Exceptions;
+using System.Security.Claims;
 
 namespace PLMS.API.Controllers
 {
-    //ToDo: Once tokens added in the UserController add [Authorize] attribute
-    //so you can access UserName of logged in user in the Actions
+    [Authorize]
     [Route("plms/[controller]")]
     [ApiController]
     public class TaskController : ControllerBase
     {
         private readonly ITaskService _taskService;
+        private readonly IMapper _mapper;
 
-        public TaskController(ITaskService taskService)
+        public TaskController(ITaskService taskService, IMapper mapper)
         {
             _taskService = taskService;
+            _mapper = mapper;
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<TaskDto>> GetByIdAsync(int id)
+        public async Task<ActionResult<GetTaskModel>> GetByIdAsync(int id)
         {
-            var task = await _taskService.GetTaskByIdAsync(id);
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            GetTaskDto taskDto;
+            try
+            {
+                taskDto = await _taskService.GetTaskByIdAsync(id, userId);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
 
-            if (task == null)
+            if (taskDto == null)
             {
                 return NotFound();
             }
 
-            return Ok(task);
+            if(!ModelState.IsValid)
+            {
+                return ApiResponseHelper.CreateErrorResponse(ModelState);
+            }
+
+            var taskModel = _mapper.Map<GetTaskModel>(taskDto);
+
+            return Ok(taskModel);
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult> EditAsync(int id)//ToDo: implement edit - create EditTaskModel, EditTaskDto;
-                                                         //accept EditTaskModel as input param, then map it to Dto.
-                                                         //don't forget about validation & constraints: you can use FluentValidator & ModelState.IsValid (like in UserControler)
-                                                         //should check things like Description max length, ids of required entities not null, etc.
+        public async Task<ActionResult> EditAsync(EditTaskModel model, int id)
         {
-            var task = await _taskService.GetTaskByIdAsync(id);
-
-            if (task.Id != id)
+            if (!ModelState.IsValid)
             {
-                return BadRequest();
+                return ApiResponseHelper.CreateErrorResponse(ModelState);
             }
+            var taskDto = _mapper.Map<EditTaskDto>(model);
 
             try
             {
-                await _taskService.EditTaskAsync(task);
+                string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                await _taskService.EditTaskAsync(taskDto, id, userId);
             }
             catch (DbUpdateConcurrencyException)
             {
-                return BadRequest();//ToDo: This is a server error, not the client, therefore return 500 Internal Server Error Response
+                return ApiResponseHelper.CreateResponse(false, "DbUpdateConcurrencyException", 500);
+            }
+            catch (UnauthorizedAccessException ex) 
+            {
+                return Unauthorized(ex.Message);
+            }
+            catch (NotFoundException ex)
+            {
+                return NotFound(ex.Message);
             }
 
-            return NoContent();
+            return ApiResponseHelper.CreateResponse(true, "Task was updated successfully");
         }
 
         [HttpPost]
-        public async Task<ActionResult<TaskDto>> AddAsync(TaskDto task)//ToDo: should not accept/return DTO, should accept/return Model/ViewModel instead
+        public async Task<ActionResult<AddTaskModel>> AddAsync(AddTaskModel model)
         {
-            //ToDo: validation for write operations is a must, so implement it, for example, with fluent validator
-            await _taskService.AddTaskAsync(task);
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!ModelState.IsValid)
+            {
+                return ApiResponseHelper.CreateErrorResponse(ModelState);
+            }
+            var taskDto = _mapper.Map<AddTaskDto>(model);
+            await _taskService.AddTaskAsync(taskDto, userId);
+            var createdTaskModel = _mapper.Map<AddTaskModel>(taskDto);
 
-            return CreatedAtAction(nameof(GetByIdAsync), new { id = task.Id }, task);
+            return ApiResponseHelper.CreateResponse(true, "Task was added successfully");
+            // CreatedAtAction(nameof(GetByIdAsync), new { id = taskDto.Id }, createdTaskModel);  -- Не получается вернуть маршрут на новое айди, не могу понять в чем ошибка (System.InvalidOperationException: No route matches the supplied values.
+         //   at Microsoft.AspNetCore.Mvc.CreatedAtActionResult.OnFormatting(ActionContext context)
         }
 
         [HttpDelete]
         public async Task<ActionResult> DeleteAsync(int id)
         {
-            var task = await _taskService.GetTaskByIdAsync(id);
-
-            if (task == null)
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            GetTaskDto taskDto;
+            try
             {
-                return NotFound();//ToDo: should be success, see idempotent requests
+                taskDto = await _taskService.GetTaskByIdAsync(id, userId);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
+
+            if (taskDto == null)
+            {
+                return ApiResponseHelper.CreateResponse(true, "Task was deleted successfully");
             }
 
             await _taskService.DeleteTaskAsync(id);
 
-            return NoContent();//ToDo: better to just return 200
+            return ApiResponseHelper.CreateResponse(true, "Task was deleted successfully");
         }
 
         [HttpGet("GetFilteredShort")]
-        public async Task<ActionResult<IEnumerable<TaskDto>>> GetFilteredShortAsync([FromQuery] MyItemFilter filters,
-            [FromQuery] string sortField, [FromQuery] string includeColumns)
-            //ToDo: remove sortField - it's already present in the filters object;
-            //ToDo: remove includeColumns - they must not be exposed to the outside!
+        public async Task<ActionResult<IEnumerable<TaskShortModel>>> GetFilteredShortAsync([FromQuery] TaskItemFilter filters)
         {
-            //filters.UserName = base.User.Identity.Name; //ToDo: include user in the filters param;
-            //it should be always setup from the backend
+            filters.UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var taskDto = await _taskService.GetFilteredShortTasksAsync(filters);
+            var taskModel = taskDto.Select(t => _mapper.Map<TaskShortModel>(t));
 
-            var tasks = await _taskService.GetFilteredShortTasksAsync(filters, sortField, includeColumns);
-
-            return Ok(tasks);//ToDo: should not return DTO, should return ViewModel instead
+            return Ok(taskModel);
         }
 
         [HttpGet("GetFilteredShortWithComments")]
-        public async Task<ActionResult<TaskDto>> GetFilteredShortWithCommentsAsync([FromQuery] MyItemFilter filters)
+        public async Task<ActionResult<TaskShortWithCommentsModel>> GetFilteredShortWithCommentsAsync([FromQuery] TaskItemFilter filters)
         {
-            var tasks = await _taskService.GetFilteredShortWithCommentsAsync(filters);
+            filters.UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var taskDto = await _taskService.GetFilteredShortWithCommentsAsync(filters);
+            var taskModel = taskDto.Select(t => _mapper.Map<TaskShortWithCommentsModel>(t));
 
-            return Ok(tasks);//ToDo: should not return DTO, should return ViewModel instead
+            return Ok(taskModel);
         }
 
         [HttpGet("GetFilteredFull")]
-        public async Task<ActionResult<IEnumerable<TaskDto>>> GetFilteredFullAsync([FromQuery] MyItemFilter filters)
+        public async Task<ActionResult<IEnumerable<TaskFullDetailsModel>>> GetFilteredFullAsync([FromQuery] TaskItemFilter filters)
         {
-            var tasks = await _taskService.GetFilteredFullAsync(filters);
+            filters.UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var taskDto = await _taskService.GetFilteredFullAsync(filters);
+            var taskModel = taskDto.Select(t => _mapper.Map<TaskFullDetailsModel>(t));
 
-            return Ok(tasks);//ToDo: should not return DTO, should return ViewModel instead
+            return Ok(taskModel);
         }
     }
 }

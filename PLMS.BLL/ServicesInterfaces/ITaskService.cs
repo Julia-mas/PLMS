@@ -5,12 +5,13 @@ namespace PLMS.BLL.ServicesInterfaces
 {
     public interface ITaskService
     {
-        Task<TaskDto> GetTaskByIdAsync(int id);
-        Task EditTaskAsync(TaskDto taskDto);
+        Task<GetTaskDto> GetTaskByIdAsync(int id, string userId);
+        Task<AddTaskDto> GetTaskByIncludeObjectsIdAsync(int id);
+        Task EditTaskAsync(EditTaskDto taskDto, int id, string userId);
         Task DeleteTaskAsync(int id);
-        Task AddTaskAsync(TaskDto taskDto);
-        Task<IEnumerable<TaskDto>> GetFilteredShortTasksAsync(MyItemFilter filters, string sortField, string includeColumns);
-        Task<IEnumerable<TaskDto>> GetFilteredShortWithCommentsAsync(MyItemFilter filters);
-        Task<IEnumerable<TaskDto>> GetFilteredFullAsync(MyItemFilter filters);
+        Task AddTaskAsync(AddTaskDto taskDto, string userId);
+        Task<IEnumerable<TaskShortDto>> GetFilteredShortTasksAsync(TaskItemFilter filters);
+        Task<IEnumerable<TaskShortWithCommentsDto>> GetFilteredShortWithCommentsAsync(TaskItemFilter filters);
+        Task<IEnumerable<TaskFullDetailsDto>> GetFilteredFullAsync(TaskItemFilter filters);
     }
 }
