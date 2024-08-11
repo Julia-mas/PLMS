@@ -1,5 +1,8 @@
 ﻿using FluentValidation;
 using PLMS.API.Models.ModelsTasks;
+using PLMS.Common;
+using PLMS.Common.Enums;
+using PLMS.Common.Extensions;
 
 namespace PLMS.API.Validators
 {
@@ -8,12 +11,18 @@ namespace PLMS.API.Validators
         public EditTaskModelValidator() 
         {
             RuleFor(x => x.Title).NotEmpty().WithMessage("Title is required.");
-            RuleFor(x => x.Description).MaximumLength(500).WithMessage("Description can't exceed 500 characters.");
-            RuleFor(x => x.PriorityId).Must(id => new List<int> { 1, 2, 3 }.Contains(id))
-            .WithMessage("Priority Id must be 1, 2, or 3.");
-            RuleFor(x => x.StatusId).Must(id => new List<int> { 1, 2, 3, 4, 5, 6 }.Contains(id))
-            .WithMessage("Status Id must be 1, 2, 3, 4, 5 or 6.");
-            RuleFor(x => x.Goal.Title).MaximumLength(200).WithMessage("Description can't exceed 200 characters.");
+            RuleFor(x => x.Title).MaximumLength(Constants.TitleMaxLength)
+                .WithMessage($"Title can't exceed [{Constants.TitleMaxLength}] characters.");
+            RuleFor(x => x.Description).MaximumLength(Constants.DescriptionMaxLength)
+                .WithMessage($"Description can't exceed [{Constants.DescriptionMaxLength}] characters.");
+            RuleFor(x => x.Goal.Title).MaximumLength(Constants.TitleMaxLength)
+                .WithMessage($"Title can't exceed [{Constants.TitleMaxLength}] characters.");
+            var priorityIds = EnumExtensions.GetEnumValues<PriorityEnum>().ToArray();
+            var statusIds = EnumExtensions.GetEnumValues<StatusEnum>().ToArray();
+            RuleFor(x => x.PriorityId).Must(id => priorityIds.Contains(id))
+                .WithMessage($"Priority Id must present in [{string.Join(", ", priorityIds)}] values");
+            RuleFor(x => x.StatusId).Must(id => statusIds.Contains(id))
+                .WithMessage($"Status Id must present in [{string.Join(", ", statusIds)}] values ");  
         }
     }
 }

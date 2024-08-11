@@ -12,8 +12,5 @@
         public int CategoryId { get; set; }
 
         public ICollection<AddTaskDto>? Tasks { get; set; }
-        public ICollection<GoalCommentDto>? GoalComments { get; set; }
-
-        public AddCategoryDto? Category { get; set; }
     }
 }

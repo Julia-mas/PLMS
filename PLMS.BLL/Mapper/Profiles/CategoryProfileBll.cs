@@ -9,7 +9,9 @@ namespace PLMS.BLL.Mapper.Profiles
         public CategoryProfileBll() 
         {
             CreateMap<AddCategoryDto, Category>()
-                .ForMember(dest => dest.User, opt => opt.Ignore()).ReverseMap(); ;
+                .ForMember(dest => dest.User, opt => opt.Ignore())
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ReverseMap();
             CreateMap<CategoryDto, Category>()
                 .ForMember(dest => dest.User, opt => opt.Ignore()).ReverseMap();
         }

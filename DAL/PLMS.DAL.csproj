@@ -21,4 +21,8 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\PLMS.Common\PLMS.Common.csproj" />
+  </ItemGroup>
+
 </Project>

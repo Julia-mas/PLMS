@@ -27,7 +27,7 @@ namespace PLMS.API.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<GetTaskModel>> GetByIdAsync(int id)
+        public async Task<ActionResult<GetTaskModel>> GetById(int id)
         {
             string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             GetTaskDto taskDto;
@@ -37,17 +37,17 @@ namespace PLMS.API.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Unauthorized(ex.Message);
+                return ApiResponseHelper.CreateErrorResponse(ex.Message, 403);
             }
-
-            if (taskDto == null)
+            catch (NotFoundException ex)
             {
-                return NotFound();
+                return ApiResponseHelper.CreateErrorResponse(ex.Message, 404);
             }
 
             if(!ModelState.IsValid)
             {
-                return ApiResponseHelper.CreateErrorResponse(ModelState);
+                var errorMessage = string.Join(", ", ModelState.Values.First().Errors.First().ErrorMessage);
+                return ApiResponseHelper.CreateErrorResponse(errorMessage, 400);
             }
 
             var taskModel = _mapper.Map<GetTaskModel>(taskDto);
@@ -56,11 +56,12 @@ namespace PLMS.API.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult> EditAsync(EditTaskModel model, int id)
+        public async Task<ActionResult> Edit(EditTaskModel model, int id)
         {
             if (!ModelState.IsValid)
             {
-                return ApiResponseHelper.CreateErrorResponse(ModelState);
+                var errorMessage = string.Join(", ", ModelState.Values.First().Errors.First().ErrorMessage);
+                return ApiResponseHelper.CreateErrorResponse(errorMessage, 400);
             }
             var taskDto = _mapper.Map<EditTaskDto>(model);
 
@@ -69,65 +70,55 @@ namespace PLMS.API.Controllers
                 string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 await _taskService.EditTaskAsync(taskDto, id, userId);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException ex)
             {
-                return ApiResponseHelper.CreateResponse(false, "DbUpdateConcurrencyException", 500);
+                return ApiResponseHelper.CreateErrorResponse(ex.Message, 500);
             }
             catch (UnauthorizedAccessException ex) 
             {
-                return Unauthorized(ex.Message);
+                return ApiResponseHelper.CreateErrorResponse(ex.Message, 403);
             }
             catch (NotFoundException ex)
             {
-                return NotFound(ex.Message);
+                return ApiResponseHelper.CreateErrorResponse(ex.Message, 404);
             }
 
-            return ApiResponseHelper.CreateResponse(true, "Task was updated successfully");
+            return ApiResponseHelper.CreateResponse<string>("Task was updated successfully");
         }
 
         [HttpPost]
-        public async Task<ActionResult<AddTaskModel>> AddAsync(AddTaskModel model)
+        public async Task<ActionResult<AddTaskModel>> Add(AddTaskModel model)
         {
             string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!ModelState.IsValid)
             {
-                return ApiResponseHelper.CreateErrorResponse(ModelState);
+                var errorMessage = string.Join(", ", ModelState.Values.First().Errors.First().ErrorMessage);
+                return ApiResponseHelper.CreateErrorResponse(errorMessage, 400);
             }
             var taskDto = _mapper.Map<AddTaskDto>(model);
             await _taskService.AddTaskAsync(taskDto, userId);
-            var createdTaskModel = _mapper.Map<AddTaskModel>(taskDto);
 
-            return ApiResponseHelper.CreateResponse(true, "Task was added successfully");
-            // CreatedAtAction(nameof(GetByIdAsync), new { id = taskDto.Id }, createdTaskModel);  -- Не получается вернуть маршрут на новое айди, не могу понять в чем ошибка (System.InvalidOperationException: No route matches the supplied values.
-         //   at Microsoft.AspNetCore.Mvc.CreatedAtActionResult.OnFormatting(ActionContext context)
+            return ApiResponseHelper.CreateResponse<string>("Task was added successfully");
         }
 
         [HttpDelete]
-        public async Task<ActionResult> DeleteAsync(int id)
+        public async Task<ActionResult> Delete(int id)
         {
-            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            GetTaskDto taskDto;
             try
             {
-                taskDto = await _taskService.GetTaskByIdAsync(id, userId);
+                string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                await _taskService.DeleteTaskAsync(id, userId);
             }
             catch (UnauthorizedAccessException ex)
             {
-                return Unauthorized(ex.Message);
+                return ApiResponseHelper.CreateErrorResponse(ex.Message, 403);
             }
 
-            if (taskDto == null)
-            {
-                return ApiResponseHelper.CreateResponse(true, "Task was deleted successfully");
-            }
-
-            await _taskService.DeleteTaskAsync(id);
-
-            return ApiResponseHelper.CreateResponse(true, "Task was deleted successfully");
+            return ApiResponseHelper.CreateResponse<string>("Task was deleted successfully");
         }
 
         [HttpGet("GetFilteredShort")]
-        public async Task<ActionResult<IEnumerable<TaskShortModel>>> GetFilteredShortAsync([FromQuery] TaskItemFilter filters)
+        public async Task<ActionResult<IEnumerable<TaskShortModel>>> GetFilteredShort([FromQuery] TaskFilter filters)
         {
             filters.UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var taskDto = await _taskService.GetFilteredShortTasksAsync(filters);
@@ -137,7 +128,7 @@ namespace PLMS.API.Controllers
         }
 
         [HttpGet("GetFilteredShortWithComments")]
-        public async Task<ActionResult<TaskShortWithCommentsModel>> GetFilteredShortWithCommentsAsync([FromQuery] TaskItemFilter filters)
+        public async Task<ActionResult<TaskShortWithCommentsModel>> GetFilteredShortWithComments([FromQuery] TaskFilter filters)
         {
             filters.UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var taskDto = await _taskService.GetFilteredShortWithCommentsAsync(filters);
@@ -147,7 +138,7 @@ namespace PLMS.API.Controllers
         }
 
         [HttpGet("GetFilteredFull")]
-        public async Task<ActionResult<IEnumerable<TaskFullDetailsModel>>> GetFilteredFullAsync([FromQuery] TaskItemFilter filters)
+        public async Task<ActionResult<IEnumerable<TaskFullDetailsModel>>> GetFilteredFull([FromQuery] TaskFilter filters)
         {
             filters.UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var taskDto = await _taskService.GetFilteredFullAsync(filters);

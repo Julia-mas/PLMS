@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using PLMS.Common.Enums;
+using PLMS.Common.Extensions;
 
 namespace PLMS.DAL.Entities
 {
@@ -75,20 +77,22 @@ namespace PLMS.DAL.Entities
                 .HasForeignKey(g => g.PriorityId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<Status>().HasData(
-                new Status { Id = 1, Title = "NotStarted" },
-                new Status { Id = 2, Title = "InProgress" },
-                new Status { Id = 3, Title = "Completed" },
-                new Status { Id = 4, Title = "OnHold" },
-                new Status { Id = 5, Title = "Cancelled" },
-                new Status { Id = 6, Title = "Failed" }
-            );
 
-            modelBuilder.Entity<Priority>().HasData(
-                new Priority { Id = 1, Title = "Low" },
-                new Priority { Id = 2, Title = "Medium" },
-                new Priority { Id = 3, Title = "High" }
-            );
+            var statusValues = EnumExtensions.GetEnumValuesAsEnum<StatusEnum>().Select(e => new Status
+            {
+                Id = (int)e,
+                Title = e.ToString()
+            });
+
+            var priorityValues = EnumExtensions.GetEnumValuesAsEnum<PriorityEnum>().Select(e => new Priority
+            {
+                Id = (int)e,
+                Title = e.ToString()
+            });
+
+            modelBuilder.Entity<Status>().HasData(statusValues);
+
+            modelBuilder.Entity<Priority>().HasData(priorityValues);
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PLMS.BLL.DTO;
 using PLMS.BLL.Filters;
 using PLMS.BLL.ServicesInterfaces;
+using PLMS.Common.Exceptions;
 using PLMS.DAL.Entities;
 using PLMS.DAL.Interfaces;
 using System.Linq.Expressions;
@@ -15,82 +16,63 @@ namespace PLMS.BLL.ServicesImplementation
         private readonly IUnitOfWork _unitOfWork;
 
         private readonly IMapper _mapper;
+        private readonly IRepository<Goal> _goalRepository;
+        private readonly IRepository<Task> _taskRepository;
+        private readonly IRepository<Category> _categoryRepository;
 
         public TaskService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _goalRepository = _unitOfWork.GetRepository<Goal>();
+            _taskRepository = _unitOfWork.GetRepository<Task>();
         }
 
-        public async System.Threading.Tasks.Task AddTaskAsync(AddTaskDto taskDto, string userId)
+        public async Task<int> AddTaskAsync(AddTaskDto taskDto, string userId)
         {
-            var goalRepository = _unitOfWork.GetRepository<Goal>();
-            var categoryRepository = _unitOfWork.GetRepository<Category>();
-            var priorityRepository = _unitOfWork.GetRepository<Priority>();
-            var statusRepository = _unitOfWork.GetRepository<Status>();
-            var defaultPriority = await priorityRepository.GetByIdAsync(1);
-            var defaultStatus = await statusRepository.GetByIdAsync(1);
-
             Goal goal;
+
             if (taskDto.GoalId != 0)
             {
-                goal = await goalRepository.GetByIdAsync(taskDto.GoalId);
-                goal ??= await MapToGoalAsync(taskDto, categoryRepository, priorityRepository, statusRepository, defaultPriority, defaultStatus, userId);
+                goal = await _goalRepository.GetByPredicateAsync(t => t.Id == taskDto.GoalId, t => t.Category);
             }
-            else
+            else if (taskDto.Goal != null)
             {
-                goal = await MapToGoalAsync(taskDto, categoryRepository, priorityRepository, statusRepository, defaultPriority, defaultStatus, userId);
+                taskDto.Goal.UserId = userId;
+                goal = _mapper.Map<Goal>(taskDto.Goal);
+                await _goalRepository.CreateAsync(goal);
             }
 
-            var priority = await priorityRepository.GetByIdAsync(taskDto.PriorityId);
-            priority ??= defaultPriority;
-
-            var status = await statusRepository.GetByIdAsync(taskDto.StatusId);
-            status ??= defaultStatus;
-
-            Task task = new()
-            {
-                Title = taskDto.Title,
-                Description = taskDto.Description,
-                Goal = goal, 
-                Priority = priority,
-                Status = status,
-                CreatedAt = DateTime.UtcNow,
-                DueDate = taskDto.DueDate,
-                TaskComments = taskDto.TaskComments?.Select(x => new TaskComment { Comment = x.Comment, CreatedAt = x.CreatedAt})?.ToArray()
-                ?? Array.Empty<TaskComment>()
-            };
-            var taskRepository = _unitOfWork.GetRepository<Task>();
-            await taskRepository.CreateAsync(task);
+            var task = _mapper.Map<Task>(taskDto);
+            await _taskRepository.CreateAsync(task);
             await _unitOfWork.CommitChangesToDatabaseAsync();
 
-            taskDto.Id = task.Id;
-            taskDto.GoalId = goal.Id;
-            taskDto.Goal.CategoryId = goal.Category.Id;
+            return task.Id;
         }
 
-        public async System.Threading.Tasks.Task DeleteTaskAsync(int id)
+        public async System.Threading.Tasks.Task DeleteTaskAsync(int id, string userId)
         {
-            var taskRepository = _unitOfWork.GetRepository<Task>();
-            Task task = await taskRepository.GetByIdAsync(id);
+            Task task = await _taskRepository.GetByPredicateAsync(t => t.Id == id, t => t.Goal);
 
             if (task == null)
             {
                 return;
             }
 
-            taskRepository.Remove(task);
+            if (task.Goal.UserId != userId)
+            {
+                throw new UnauthorizedAccessException("This user is not unauthorized to delete this task");
+            }
+
+            _taskRepository.Remove(task);
             await _unitOfWork.CommitChangesToDatabaseAsync();
         }
 
         public async System.Threading.Tasks.Task EditTaskAsync(EditTaskDto taskDto, int id, string userId)
         {
-            var taskRepository = _unitOfWork.GetRepository<Task>();
-            var goalRepository = _unitOfWork.GetRepository<Goal>();
-            var task = await taskRepository.GetByIdAsync(id) ?? throw new Exception("Task not found");
-            var goal = await goalRepository.GetByIdAsync(task.GoalId);
+            var task = await _taskRepository.GetByPredicateAsync(t => t.Id == id, t => t.Goal) ?? throw new NotFoundException("Task was not found");
 
-            if (goal.UserId != userId)
+            if (task.Goal.UserId != userId)
             {
                 throw new UnauthorizedAccessException("This user is not unauthorized to access this task");
             }
@@ -102,23 +84,11 @@ namespace PLMS.BLL.ServicesImplementation
             task.PriorityId = taskDto.PriorityId != default ? taskDto.PriorityId : task.PriorityId;
             task.GoalId = taskDto.GoalId != default ? taskDto.GoalId : task.GoalId;
 
-            if (taskDto.TaskComments != null && taskDto.TaskComments.Any())
-            {
-                foreach (var taskCommentDto in taskDto.TaskComments)
-                {
-                    var existingComment = task.TaskComments.FirstOrDefault(tc => tc.Id == taskCommentDto.Id);
-                    if (existingComment == null)
-                    {
-                        task.TaskComments.Add(new TaskComment { Comment = taskCommentDto.Comment, CreatedAt = taskCommentDto.CreatedAt });
-                    }
-                }
-            }
-
-            taskRepository.Update(task);
+            _taskRepository.Update(task);
             await _unitOfWork.CommitChangesToDatabaseAsync();
         }
 
-        public async Task<IEnumerable<TaskFullDetailsDto>> GetFilteredFullAsync(TaskItemFilter filters)
+        public async Task<IEnumerable<TaskFullDetailsDto>> GetFilteredFullAsync(TaskFilter filters)
         {
             var tasks = await GetFilteredTasksAsync(filters);
 
@@ -127,29 +97,12 @@ namespace PLMS.BLL.ServicesImplementation
                 return Enumerable.Empty<TaskFullDetailsDto>();
             }
 
-            var results = tasks.Select(t => 
-            new TaskFullDetailsDto
-            {
-                Title = t.Title,
-                Description = t.Description ?? string.Empty,
-                GoalTitle = t.Goal?.Title ?? string.Empty,
-                CategoryTitle = t.Goal?.Category?.Title ?? string.Empty,
-                TaskComments = t.TaskComments?.Select(tс => new TaskCommentDto
-                {
-                    Comment = tс.Comment,
-                    CreatedAt = tс.CreatedAt,
-                    TaskId = tс.TaskId
-                })?.ToArray() ?? Array.Empty<TaskCommentDto>(),
-                PriorityTitle = t.Priority.Title,
-                StatusTitle = t.Status.Title,
-                CreatedAt = t.CreatedAt,
-                DueDate = t.DueDate
-            }).ToArray();
+            var fullTasks = _mapper.Map<Task[], TaskFullDetailsDto[]>(tasks.ToArray());
 
-            return results;
+            return fullTasks;
         }
 
-        public async Task<IEnumerable<TaskShortDto>> GetFilteredShortTasksAsync(TaskItemFilter filters)
+        public async Task<IEnumerable<TaskShortDto>> GetFilteredShortTasksAsync(TaskFilter filters)
         {
             var tasks = await GetFilteredTasksAsync(filters);
 
@@ -158,18 +111,12 @@ namespace PLMS.BLL.ServicesImplementation
                 return Enumerable.Empty<TaskShortDto>();
             }
 
-            IEnumerable<TaskShortDto> results = tasks.Select(t =>
-            new TaskShortDto
-            {
-                Title = t.Title,
-                DueDate = t.DueDate,
-                CreatedAt = t.CreatedAt
-            }).ToArray();
-
-            return results;
+            var shortTasks = _mapper.Map<Task[], TaskShortDto[]>(tasks.ToArray());
+            
+            return shortTasks;
         }
 
-        public async Task<IEnumerable<TaskShortWithCommentsDto>> GetFilteredShortWithCommentsAsync(TaskItemFilter filters)
+        public async Task<IEnumerable<TaskShortWithCommentsDto>> GetFilteredShortWithCommentsAsync(TaskFilter filters)
         {
             var tasks = await GetFilteredTasksAsync(filters);
 
@@ -178,57 +125,28 @@ namespace PLMS.BLL.ServicesImplementation
                 return Enumerable.Empty<TaskShortWithCommentsDto>();
             }
 
-            var results = tasks.Select(t => new TaskShortWithCommentsDto
-            {
-                Title = t.Title,
-                GoalTitle = t.Goal?.Title ?? string.Empty,
-                TaskComments = t.TaskComments?.Select(tс => new TaskCommentDto 
-                { 
-                    Comment = tс.Comment, 
-                    CreatedAt = tс.CreatedAt
-                })?
-                .ToArray() ?? Array.Empty<TaskCommentDto>(),
-                CreatedAt = t.CreatedAt
-            }).ToArray();
+            var shortTasksWithComments = _mapper.Map<Task[], TaskShortWithCommentsDto[]>(tasks.ToArray());
 
-            return results;
+            return shortTasksWithComments;
         }
 
         public async Task<GetTaskDto> GetTaskByIdAsync(int id, string userId)
         {
-            var taskRepository = _unitOfWork.GetRepository<Task>();
-            var goalRepository = _unitOfWork.GetRepository<Goal>();
-            var task = await taskRepository.GetByIdAsync(id);
-            if (task == null)
-            {
-                return new GetTaskDto();
-            }
+            var task = await _taskRepository.GetByPredicateAsync(t => t.Id == id, t => t.Goal) ?? throw new NotFoundException("Task was not found");
 
-            var goal = await goalRepository.GetByIdAsync(task.GoalId);
-            if (goal.UserId != userId)
+            if (task.Goal.UserId != userId)
             {
                 throw new UnauthorizedAccessException("This user is not unauthorized to access this task");
             }
 
-            var taskDto = new GetTaskDto()
-            {
-                Id = task.Id,
-                Title = task.Title,
-                Description = task.Description,
-                GoalId = task.GoalId,
-                CreatedAt = task.CreatedAt,
-                DueDate = task.DueDate,
-                PriorityId = task.PriorityId,
-                StatusId = task.StatusId
-            };
+            var taskDto = _mapper.Map<GetTaskDto>(task);
 
             return taskDto;
         }
 
         public async Task<AddTaskDto> GetTaskByIncludeObjectsIdAsync(int id)
         {
-            var taskRepository = _unitOfWork.GetRepository<Task>();
-            var task = await taskRepository.GetByPredicateAsync(t => t.Id.Equals(id),
+            var task = await _taskRepository.GetByPredicateAsync(t => t.Id.Equals(id),
                 t => t.Priority,
                 t => t.Status,
                 t => t.Goal,
@@ -237,52 +155,17 @@ namespace PLMS.BLL.ServicesImplementation
                 t => t.Goal.Category,
                 t => t.TaskComments);
 
-            AddTaskDto taskDto = new()
-            {
-                Title = task.Title,
-                Description = task.Description ?? string.Empty,
-                GoalId = task.Goal?.Id ?? 0,
-                TaskComments = task.TaskComments?.Select(
-                    t => new TaskCommentDto
-                    {
-                        Comment = t.Comment,
-                        CreatedAt = t.CreatedAt
-                    })?.ToArray() ?? Array.Empty<TaskCommentDto>(),
-                CreatedAt = task.CreatedAt,
-                DueDate = task.DueDate,
-                PriorityId = task.Priority.Id,
-                StatusId = task.Status.Id,
-            };
-
+            var taskDto = _mapper.Map<AddTaskDto>(task);
             return taskDto;
         }
 
-        private async Task<Goal> MapToGoalAsync(AddTaskDto taskDto, IRepository<Category> categoryRepository, IRepository<Priority> priorityRepository, IRepository<Status> statusRepository,
-            Priority defaultPriority, Status defaultStatus, string userId)
-        {
-            taskDto.Goal.UserId = userId;
-            Goal goal = _mapper.Map<Goal>(taskDto.Goal);
-            var category = await categoryRepository.GetByIdAsync(taskDto.Goal.CategoryId);
-            if (category == null)
-            {
-                taskDto.Goal.Category.UserId = userId;
-                category = _mapper.Map<Category>(taskDto.Goal.Category);
-            }
-            goal.Category = category;
-            goal.Priority = await priorityRepository.GetByIdAsync(taskDto.Goal.PriorityId) ?? defaultPriority;
-            goal.Status = await statusRepository.GetByIdAsync(taskDto.Goal.StatusId) ?? defaultStatus;
-
-            return goal;
-        }
-
-        private async Task<IEnumerable<Task>> GetFilteredTasksAsync(TaskItemFilter filters)
+        private async Task<IEnumerable<Task>> GetFilteredTasksAsync(TaskFilter filters)
         {
             var filterExpression = ApplyFilters(filters);
             var orderFunction = ApplyOrder(filters);
 
             // Apply filtation and sorting on the DB level.
-            var taskRepository = _unitOfWork.GetRepository<Task>();
-            var query = taskRepository.GetAll()
+            var query = _taskRepository.GetAll()
                                        .Include(t => t.Goal)
                                        .ThenInclude(g => g.Category)
                                        .Include(t => t.Goal)
@@ -304,21 +187,21 @@ namespace PLMS.BLL.ServicesImplementation
             return tasks;
         }
 
-        private static Func<IQueryable<Task>, IOrderedQueryable<Task>> ApplyOrder(TaskItemFilter filters)
+        private static Func<IQueryable<Task>, IOrderedQueryable<Task>> ApplyOrder(TaskFilter filters)
         {
             return q =>
             {
                 switch (filters.SortField)
                 {
-                    case TaskItemFilter.TaskItemSortFields.Priority:
+                    case TaskFilter.TaskSortFields.Priority:
                         return filters.SortOrder == BaseFilter.SortOrders.Asc ? q.OrderBy(t => t.Priority.Title) : q.OrderByDescending(t => t.Priority.Title);
-                    case TaskItemFilter.TaskItemSortFields.Status:
+                    case TaskFilter.TaskSortFields.Status:
                         return filters.SortOrder == BaseFilter.SortOrders.Asc ? q.OrderBy(t => t.Status.Title) : q.OrderByDescending(t => t.Status.Title);
-                    case TaskItemFilter.TaskItemSortFields.DueDate:
+                    case TaskFilter.TaskSortFields.DueDate:
                         return filters.SortOrder == BaseFilter.SortOrders.Asc ? q.OrderBy(t => t.DueDate) : q.OrderByDescending(t => t.DueDate);
-                    case TaskItemFilter.TaskItemSortFields.CreatedAt:
+                    case TaskFilter.TaskSortFields.CreatedAt:
                         return filters.SortOrder == BaseFilter.SortOrders.Asc ? q.OrderBy(t => t.CreatedAt) : q.OrderByDescending(t => t.CreatedAt);
-                    case TaskItemFilter.TaskItemSortFields.Category:
+                    case TaskFilter.TaskSortFields.Category:
                         return filters.SortOrder == BaseFilter.SortOrders.Asc ? q.OrderBy(t => t.Goal.CategoryId) : q.OrderByDescending(t => t.Goal.CategoryId);
                     default:
                         return q.OrderByDescending(t => t.Priority.Title);
@@ -326,7 +209,7 @@ namespace PLMS.BLL.ServicesImplementation
             };
         }
 
-        private static Expression<Func<Task, bool>> ApplyFilters(TaskItemFilter filters)
+        private static Expression<Func<Task, bool>> ApplyFilters(TaskFilter filters)
         {
             return t => (t.Goal.UserId.Contains(filters.UserId))
                 && (filters.PriorityIds == null || filters.PriorityIds.Contains(t.PriorityId))

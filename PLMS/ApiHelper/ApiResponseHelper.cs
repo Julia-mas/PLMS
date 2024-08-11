@@ -1,17 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 
 namespace PLMS.API.ApiHelper
 {
     public static class ApiResponseHelper
     {
-        public static ActionResult CreateResponse(bool isSuccess, string message, int statusCode = 200, string? token = null)
+        public static ActionResult CreateResponse<T>(string message, int statusCode = 200, T data = default)
         {
             var response = new
             {
-                IsSuccess = isSuccess,
+                IsSuccess = true,
                 Message = message,
-                Token = token
+                Data = data
             };
 
             return new JsonResult(response)
@@ -20,14 +19,13 @@ namespace PLMS.API.ApiHelper
             };
         }
 
-        public static ActionResult CreateErrorResponse(ModelStateDictionary modelState, int statusCode = 400)
+        public static ActionResult CreateErrorResponse(string error, int statusCode)
         {
-            var errorMessage = modelState.Values.First().Errors.First().ErrorMessage;
+
             var response = new
             {
                 IsSuccess = false,
-                Message = "Validation errors occurred.",
-                Errors = string.Join(", ", errorMessage)
+                Errors = error
             };
 
             return new JsonResult(response)

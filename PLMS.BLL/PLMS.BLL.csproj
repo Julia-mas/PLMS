@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DAL\PLMS.DAL.csproj" />
+    <ProjectReference Include="..\PLMS.Common\PLMS.Common.csproj" />
   </ItemGroup>
 
 </Project>

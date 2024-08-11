@@ -1,8 +1,8 @@
 ﻿namespace PLMS.BLL.Filters
 {
-    public class TaskItemFilter: BaseFilter
+    public class TaskFilter: BaseFilter
     {
-        public enum TaskItemSortFields
+        public enum TaskSortFields
         {
             CreatedAt,
             DueDate,
@@ -12,7 +12,7 @@
             Status
         }
 
-        public TaskItemSortFields SortField { get; set; }
+        public TaskSortFields SortField { get; set; }
 
         public IEnumerable<string>? CategoryIds { get; set; }
 
