@@ -10,6 +10,6 @@ namespace PLMS.API.Models
         public int StatusId { get; set; }
         public int PriorityId { get; set; }
         public int CategoryId { get; set; }
-        public ICollection<AddTaskModel>? Tasks { get; set; }
+        public ICollection<TaskModelBase>? Tasks { get; set; }
     }
 }

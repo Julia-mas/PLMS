@@ -4,7 +4,6 @@ using PLMS.BLL.DTO;
 using PLMS.BLL.Filters;
 using PLMS.BLL.ServicesInterfaces;
 using PLMS.Common.Exceptions;
-using PLMS.DAL.Entities;
 using PLMS.DAL.Interfaces;
 using System.Linq.Expressions;
 using Task = PLMS.DAL.Entities.Task;
@@ -16,33 +15,17 @@ namespace PLMS.BLL.ServicesImplementation
         private readonly IUnitOfWork _unitOfWork;
 
         private readonly IMapper _mapper;
-        private readonly IRepository<Goal> _goalRepository;
         private readonly IRepository<Task> _taskRepository;
-        private readonly IRepository<Category> _categoryRepository;
 
         public TaskService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
-            _goalRepository = _unitOfWork.GetRepository<Goal>();
             _taskRepository = _unitOfWork.GetRepository<Task>();
         }
 
-        public async Task<int> AddTaskAsync(AddTaskDto taskDto, string userId)
+        public async Task<int> AddTaskAsync(AddTaskDto taskDto)
         {
-            Goal goal;
-
-            if (taskDto.GoalId != 0)
-            {
-                goal = await _goalRepository.GetByPredicateAsync(t => t.Id == taskDto.GoalId, t => t.Category);
-            }
-            else if (taskDto.Goal != null)
-            {
-                taskDto.Goal.UserId = userId;
-                goal = _mapper.Map<Goal>(taskDto.Goal);
-                await _goalRepository.CreateAsync(goal);
-            }
-
             var task = _mapper.Map<Task>(taskDto);
             await _taskRepository.CreateAsync(task);
             await _unitOfWork.CommitChangesToDatabaseAsync();
@@ -132,7 +115,7 @@ namespace PLMS.BLL.ServicesImplementation
 
         public async Task<GetTaskDto> GetTaskByIdAsync(int id, string userId)
         {
-            var task = await _taskRepository.GetByPredicateAsync(t => t.Id == id, t => t.Goal) ?? throw new NotFoundException("Task was not found");
+            var task = await _taskRepository.GetByPredicateAsync(t => t.Id == id, t => t.Goal, t => t.Status, t => t.Priority) ?? throw new NotFoundException("Task was not found");
 
             if (task.Goal.UserId != userId)
             {

@@ -41,7 +41,7 @@ namespace PLMS.API.Controllers
             if (result.Succeeded)
             {
                 var token = await _userManager.GenerateUserTokenAsync(user, "Default", "access_token");
-                return ApiResponseHelper.CreateResponse("User registered successfully", 200, token);
+                return ApiResponseHelper.CreateOkResponse("User registered successfully", 200, token);
             }
             var errors = string.Join(", ", result.Errors.Select(e => e.Description).ToList());
             return ApiResponseHelper.CreateErrorResponse(errors, 400);
@@ -67,7 +67,7 @@ namespace PLMS.API.Controllers
             if (result.Succeeded)
             {
                 var token = await _userManager.GenerateUserTokenAsync(user, "Default", "access_token");
-                return ApiResponseHelper.CreateResponse("User logged in successfully.", 200, token);
+                return ApiResponseHelper.CreateOkResponse("User logged in successfully.", 200, token);
             }
 
             if (result.IsLockedOut)
@@ -82,7 +82,7 @@ namespace PLMS.API.Controllers
         public async Task<ActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
-            return ApiResponseHelper.CreateResponse<string>("User logged out successfully.");
+            return ApiResponseHelper.CreateOkResponse<string>("User logged out successfully.");
         }
 
         [HttpPost("ForgotPassword")]
@@ -96,7 +96,7 @@ namespace PLMS.API.Controllers
 
             var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
 
-            return ApiResponseHelper.CreateResponse("Password reset email sent.", 200, resetToken);
+            return ApiResponseHelper.CreateOkResponse("Password reset email sent.", 200, resetToken);
         }
     }
 }

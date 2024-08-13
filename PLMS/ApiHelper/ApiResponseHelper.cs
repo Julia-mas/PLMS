@@ -4,7 +4,7 @@ namespace PLMS.API.ApiHelper
 {
     public static class ApiResponseHelper
     {
-        public static ActionResult CreateResponse<T>(string message, int statusCode = 200, T data = default)
+        public static ActionResult CreateOkResponse<T>(string message, int statusCode = 200, T data = default)
         {
             var response = new
             {

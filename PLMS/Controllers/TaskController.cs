@@ -37,17 +37,17 @@ namespace PLMS.API.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                return ApiResponseHelper.CreateErrorResponse(ex.Message, 403);
+                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status403Forbidden);
             }
             catch (NotFoundException ex)
             {
-                return ApiResponseHelper.CreateErrorResponse(ex.Message, 404);
+                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
             }
 
             if(!ModelState.IsValid)
             {
                 var errorMessage = string.Join(", ", ModelState.Values.First().Errors.First().ErrorMessage);
-                return ApiResponseHelper.CreateErrorResponse(errorMessage, 400);
+                return ApiResponseHelper.CreateErrorResponse(errorMessage, StatusCodes.Status400BadRequest);
             }
 
             var taskModel = _mapper.Map<GetTaskModel>(taskDto);
@@ -61,7 +61,7 @@ namespace PLMS.API.Controllers
             if (!ModelState.IsValid)
             {
                 var errorMessage = string.Join(", ", ModelState.Values.First().Errors.First().ErrorMessage);
-                return ApiResponseHelper.CreateErrorResponse(errorMessage, 400);
+                return ApiResponseHelper.CreateErrorResponse(errorMessage, StatusCodes.Status400BadRequest);
             }
             var taskDto = _mapper.Map<EditTaskDto>(model);
 
@@ -72,33 +72,32 @@ namespace PLMS.API.Controllers
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                return ApiResponseHelper.CreateErrorResponse(ex.Message, 500);
+                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status500InternalServerError);
             }
             catch (UnauthorizedAccessException ex) 
             {
-                return ApiResponseHelper.CreateErrorResponse(ex.Message, 403);
+                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status403Forbidden);
             }
             catch (NotFoundException ex)
             {
-                return ApiResponseHelper.CreateErrorResponse(ex.Message, 404);
+                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
             }
 
-            return ApiResponseHelper.CreateResponse<string>("Task was updated successfully");
+            return ApiResponseHelper.CreateOkResponse<string>("Task was updated successfully");
         }
 
         [HttpPost]
-        public async Task<ActionResult<AddTaskModel>> Add(AddTaskModel model)
+        public async Task<ActionResult<TaskModelBase>> Add(TaskModelBase model)
         {
-            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!ModelState.IsValid)
             {
                 var errorMessage = string.Join(", ", ModelState.Values.First().Errors.First().ErrorMessage);
-                return ApiResponseHelper.CreateErrorResponse(errorMessage, 400);
+                return ApiResponseHelper.CreateErrorResponse(errorMessage, StatusCodes.Status400BadRequest);
             }
             var taskDto = _mapper.Map<AddTaskDto>(model);
-            await _taskService.AddTaskAsync(taskDto, userId);
+            int idTask = await _taskService.AddTaskAsync(taskDto);
 
-            return ApiResponseHelper.CreateResponse<string>("Task was added successfully");
+            return ApiResponseHelper.CreateOkResponse("Task was added successfully", StatusCodes.Status200OK, idTask);
         }
 
         [HttpDelete]
@@ -111,10 +110,10 @@ namespace PLMS.API.Controllers
             }
             catch (UnauthorizedAccessException ex)
             {
-                return ApiResponseHelper.CreateErrorResponse(ex.Message, 403);
+                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status403Forbidden);
             }
 
-            return ApiResponseHelper.CreateResponse<string>("Task was deleted successfully");
+            return ApiResponseHelper.CreateOkResponse<string>("Task was deleted successfully");
         }
 
         [HttpGet("GetFilteredShort")]
@@ -124,7 +123,7 @@ namespace PLMS.API.Controllers
             var taskDto = await _taskService.GetFilteredShortTasksAsync(filters);
             var taskModel = taskDto.Select(t => _mapper.Map<TaskShortModel>(t));
 
-            return Ok(taskModel);
+            return ApiResponseHelper.CreateOkResponse("Returned filtered tasks without details", StatusCodes.Status200OK, taskModel);
         }
 
         [HttpGet("GetFilteredShortWithComments")]
@@ -134,7 +133,7 @@ namespace PLMS.API.Controllers
             var taskDto = await _taskService.GetFilteredShortWithCommentsAsync(filters);
             var taskModel = taskDto.Select(t => _mapper.Map<TaskShortWithCommentsModel>(t));
 
-            return Ok(taskModel);
+            return ApiResponseHelper.CreateOkResponse("Returned filtered tasks with comments", StatusCodes.Status200OK, taskModel);
         }
 
         [HttpGet("GetFilteredFull")]
@@ -144,7 +143,7 @@ namespace PLMS.API.Controllers
             var taskDto = await _taskService.GetFilteredFullAsync(filters);
             var taskModel = taskDto.Select(t => _mapper.Map<TaskFullDetailsModel>(t));
 
-            return Ok(taskModel);
+            return ApiResponseHelper.CreateOkResponse("Returned filtered tasks with full details", StatusCodes.Status200OK, taskModel);
         }
     }
 }
