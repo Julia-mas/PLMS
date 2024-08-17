@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using PLMS.API.ApiHelper;
-using PLMS.API.Models;
+using PLMS.API.Models.ModelsUser;
 using PLMS.DAL.Entities;
 
 namespace PLMS.API.Controllers
@@ -24,8 +24,7 @@ namespace PLMS.API.Controllers
         {
             if (!ModelState.IsValid)
             {
-                var errorMessage = string.Join(", ", ModelState.Values.First().Errors.First().ErrorMessage);
-                return ApiResponseHelper.CreateErrorResponse(errorMessage, 400);
+                return ApiResponseHelper.CreateValidationErrorResponse(ModelState);
             }
 
             var user = new User 
@@ -41,10 +40,10 @@ namespace PLMS.API.Controllers
             if (result.Succeeded)
             {
                 var token = await _userManager.GenerateUserTokenAsync(user, "Default", "access_token");
-                return ApiResponseHelper.CreateOkResponse("User registered successfully", 200, token);
+                return ApiResponseHelper.CreateOkResponseWithMessage("User registered successfully", token);
             }
             var errors = string.Join(", ", result.Errors.Select(e => e.Description).ToList());
-            return ApiResponseHelper.CreateErrorResponse(errors, 400);
+            return ApiResponseHelper.CreateErrorResponse(errors, StatusCodes.Status400BadRequest);
         }
 
         [HttpPost("Login")]
@@ -52,14 +51,13 @@ namespace PLMS.API.Controllers
         {
             if (!ModelState.IsValid)
             {
-                var errorMessage = string.Join(", ", ModelState.Values.First().Errors.First().ErrorMessage);
-                return ApiResponseHelper.CreateErrorResponse(errorMessage, 400);
+                return ApiResponseHelper.CreateValidationErrorResponse(ModelState);
             }
 
             var user = await _userManager.FindByNameAsync(model.Username);
             if (user == null)
             {
-                return ApiResponseHelper.CreateErrorResponse("Invalid login attempt.", 401);
+                return ApiResponseHelper.CreateErrorResponse("Invalid login attempt.", StatusCodes.Status401Unauthorized);
             }
 
             var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, model.RememberMe, lockoutOnFailure: false);
@@ -67,22 +65,22 @@ namespace PLMS.API.Controllers
             if (result.Succeeded)
             {
                 var token = await _userManager.GenerateUserTokenAsync(user, "Default", "access_token");
-                return ApiResponseHelper.CreateOkResponse("User logged in successfully.", 200, token);
+                return ApiResponseHelper.CreateOkResponseWithMessage("User logged in successfully.", token);
             }
 
             if (result.IsLockedOut)
             {
-                return ApiResponseHelper.CreateErrorResponse("User account locked out.", 401);
+                return ApiResponseHelper.CreateErrorResponse("User account locked out.", StatusCodes.Status401Unauthorized);
             }
 
-            return ApiResponseHelper.CreateErrorResponse("Invalid login attempt.", 401);
+            return ApiResponseHelper.CreateErrorResponse("Invalid login attempt.", StatusCodes.Status401Unauthorized);
         }
 
         [HttpPost("Logout")]
         public async Task<ActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
-            return ApiResponseHelper.CreateOkResponse<string>("User logged out successfully.");
+            return ApiResponseHelper.CreateOkResponseWithMessage<string>("User logged out successfully.");
         }
 
         [HttpPost("ForgotPassword")]
@@ -91,12 +89,12 @@ namespace PLMS.API.Controllers
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
-                return ApiResponseHelper.CreateErrorResponse("Email not found.", 400);
+                return ApiResponseHelper.CreateErrorResponse("Email not found.", StatusCodes.Status400BadRequest);
             }
 
             var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
 
-            return ApiResponseHelper.CreateOkResponse("Password reset email sent.", 200, resetToken);
+            return ApiResponseHelper.CreateOkResponseWithMessage("Password reset email sent.", resetToken);
         }
     }
 }

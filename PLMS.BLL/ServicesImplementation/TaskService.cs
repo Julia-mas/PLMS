@@ -1,9 +1,10 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using PLMS.BLL.DTO;
+using PLMS.BLL.DTO.TasksDto;
 using PLMS.BLL.Filters;
 using PLMS.BLL.ServicesInterfaces;
 using PLMS.Common.Exceptions;
+using PLMS.DAL.Entities;
 using PLMS.DAL.Interfaces;
 using System.Linq.Expressions;
 using Task = PLMS.DAL.Entities.Task;
@@ -16,16 +17,24 @@ namespace PLMS.BLL.ServicesImplementation
 
         private readonly IMapper _mapper;
         private readonly IRepository<Task> _taskRepository;
+        private readonly IRepository<Goal> _goalRepository;
 
         public TaskService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _taskRepository = _unitOfWork.GetRepository<Task>();
+            _goalRepository = _unitOfWork.GetRepository<Goal>();
         }
 
         public async Task<int> AddTaskAsync(AddTaskDto taskDto)
         {
+            var goal = await _goalRepository.GetByIdAsync(taskDto.GoalId) ?? throw new NotFoundException("Goal was not found");
+            if (goal != null && goal.UserId != taskDto.UserId)
+            {
+                throw new UnauthorizedAccessException("Can't add this task!");
+            }
+
             var task = _mapper.Map<Task>(taskDto);
             await _taskRepository.CreateAsync(task);
             await _unitOfWork.CommitChangesToDatabaseAsync();
@@ -35,7 +44,7 @@ namespace PLMS.BLL.ServicesImplementation
 
         public async System.Threading.Tasks.Task DeleteTaskAsync(int id, string userId)
         {
-            Task task = await _taskRepository.GetByPredicateAsync(t => t.Id == id, t => t.Goal);
+            Task? task = await _taskRepository.GetByPredicateAsync(t => t.Id == id, t => t.Goal);
 
             if (task == null)
             {
@@ -44,23 +53,23 @@ namespace PLMS.BLL.ServicesImplementation
 
             if (task.Goal.UserId != userId)
             {
-                throw new UnauthorizedAccessException("This user is not unauthorized to delete this task");
+                throw new NotFoundException("Task was not found");
             }
 
             _taskRepository.Remove(task);
             await _unitOfWork.CommitChangesToDatabaseAsync();
         }
 
-        public async System.Threading.Tasks.Task EditTaskAsync(EditTaskDto taskDto, int id, string userId)
+        public async System.Threading.Tasks.Task EditTaskAsync(TaskBaseDto taskDto, string userId)
         {
-            var task = await _taskRepository.GetByPredicateAsync(t => t.Id == id, t => t.Goal) ?? throw new NotFoundException("Task was not found");
+            var task = await _taskRepository.GetByPredicateAsync(t => t.Id == taskDto.Id, t => t.Goal) ?? throw new NotFoundException("Task was not found");
 
             if (task.Goal.UserId != userId)
             {
-                throw new UnauthorizedAccessException("This user is not unauthorized to access this task");
+                throw new NotFoundException("Task was not found");
             }
 
-            task.Title = taskDto.Title ?? task.Title;
+            task.Title = taskDto.Title != default ? taskDto.Title: task.Title;
             task.Description = taskDto.Description ?? task.Description;   
             task.DueDate = taskDto.DueDate != default ? taskDto.DueDate : task.DueDate;
             task.StatusId = taskDto.StatusId != default ? taskDto.StatusId : task.StatusId;
@@ -119,7 +128,7 @@ namespace PLMS.BLL.ServicesImplementation
 
             if (task.Goal.UserId != userId)
             {
-                throw new UnauthorizedAccessException("This user is not unauthorized to access this task");
+                throw new NotFoundException("Task was not found");
             }
 
             var taskDto = _mapper.Map<GetTaskDto>(task);

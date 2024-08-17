@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using PLMS.BLL.DTO;
+using PLMS.BLL.DTO.CategoriesDto;
 using PLMS.DAL.Entities;
 
 namespace PLMS.BLL.Mapper.Profiles
@@ -11,9 +11,12 @@ namespace PLMS.BLL.Mapper.Profiles
             CreateMap<AddCategoryDto, Category>()
                 .ForMember(dest => dest.User, opt => opt.Ignore())
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.Goals, opt => opt.Ignore())
                 .ReverseMap();
+
             CreateMap<CategoryDto, Category>()
-                .ForMember(dest => dest.User, opt => opt.Ignore()).ReverseMap();
+                .ForMember(dest => dest.User, opt => opt.Ignore())
+                .ForMember(dest => dest.Goals, opt => opt.Ignore());
         }
     }
 }

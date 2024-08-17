@@ -18,9 +18,9 @@ namespace PLMS.DAL.Implementation
 
         public IQueryable<T> GetAll() => _db.Set<T>().AsQueryable();
 
-        public Task<T?> GetByPredicateAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes)
+        public async Task<T?> GetByPredicateAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes)
         {
-            return _db.Set<T>().IncludeMultiple(includes).FirstOrDefaultAsync(predicate);
+            return await _db.Set<T>().IncludeMultiple(includes).FirstOrDefaultAsync(predicate);
         }
 
         public async Task<T?> GetByIdAsync<TId>(TId id) => await _db.Set<T>().FindAsync(id);
@@ -33,7 +33,7 @@ namespace PLMS.DAL.Implementation
 
         public void Update(T item) => _db.Entry(item).State = EntityState.Modified;
 
-        public async Task<IQueryable<T>> GetFilteredAsync(
+        public IQueryable<T> GetFiltered(
             Expression<Func<T, bool>>? filter = null,
             Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
             string includeProperties = "")

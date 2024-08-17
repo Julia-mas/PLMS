@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
-using PLMS.API.Models;
-using PLMS.BLL.DTO;
+using PLMS.API.Models.ModelsGoals;
+using PLMS.BLL.DTO.GoalsDto;
 
 namespace PLMS.API.Mapper.Profiles
 {
@@ -8,13 +8,12 @@ namespace PLMS.API.Mapper.Profiles
     {
         public GoalProfile() 
         {
-            CreateMap<EditGoalModel, EditGoalDto>()
-                .ForMember(dest => dest.UserId, opt => opt.Ignore())
-                .ReverseMap();
-            CreateMap<AddGoalModel, AddGoalDto>()
+            CreateMap<GoalBaseModel, GoalBaseDto>()
+                .ForMember(dest => dest.UserId, opt => opt.Ignore());
+
+            CreateMap<GoalBaseModel, AddGoalDto>()
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-                .ForMember(dest => dest.UserId, opt => opt.Ignore())
-                .ReverseMap();
+                .ForMember(dest => dest.UserId, opt => opt.Ignore());
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using PLMS.BLL.DTO;
+using PLMS.BLL.DTO.CommentsDto;
 using PLMS.DAL.Entities;
 
 namespace PLMS.BLL.Mapper.Profiles

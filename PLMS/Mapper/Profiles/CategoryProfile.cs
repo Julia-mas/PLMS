@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
-using PLMS.API.Models;
-using PLMS.BLL.DTO;
+using PLMS.API.Models.ModelsCategories;
+using PLMS.BLL.DTO.CategoriesDto;
 
 namespace PLMS.API.Mapper.Profiles
 {
@@ -10,12 +10,10 @@ namespace PLMS.API.Mapper.Profiles
         {
             CreateMap<EditCategoryModel, CategoryDto>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
-                .ForMember(dest => dest.UserId, opt => opt.Ignore())
-                .ReverseMap();
+                .ForMember(dest => dest.UserId, opt => opt.Ignore());
+
             CreateMap<AddCategoryModel, AddCategoryDto>()
-                .ForMember(dest => dest.Id, opt => opt.Ignore())
-                .ForMember(dest => dest.UserId, opt => opt.Ignore())
-                .ReverseMap();
+                .ForMember(dest => dest.UserId, opt => opt.Ignore());
         }
     }
 }

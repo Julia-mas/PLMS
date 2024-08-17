@@ -6,9 +6,9 @@ namespace PLMS.DAL.Interfaces
     {
         IQueryable<T> GetAll();
 
-        Task<T> GetByPredicateAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes);
+        Task<T?> GetByPredicateAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includes);
 
-        Task<T> GetByIdAsync<TId>(TId id);
+        Task<T?> GetByIdAsync<TId>(TId id);
         
         Task CreateAsync(T item);
         
@@ -18,7 +18,7 @@ namespace PLMS.DAL.Interfaces
         
         void Update(T item);
 
-        Task<IQueryable<T>> GetFilteredAsync(Expression<Func<T, bool>>? filter = null,
+        IQueryable<T> GetFiltered(Expression<Func<T, bool>>? filter = null,
             Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null, string includeProperties = "");
     }
 }

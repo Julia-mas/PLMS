@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace PLMS.API.ApiHelper
 {
     public static class ApiResponseHelper
     {
-        public static ActionResult CreateOkResponse<T>(string message, int statusCode = 200, T data = default)
+        public static ActionResult CreateOkResponseWithMessage<T>(string message, T? data = default)
         {
             var response = new
             {
@@ -15,7 +16,20 @@ namespace PLMS.API.ApiHelper
 
             return new JsonResult(response)
             {
-                StatusCode = statusCode
+                StatusCode = StatusCodes.Status200OK
+            };
+        }
+
+        public static ActionResult CreateOkResponseWithoutMessage<T>(T? data = default)
+        {
+            var response = new
+            {
+                Data = data
+            };
+
+            return new JsonResult(response)
+            {
+                StatusCode = StatusCodes.Status200OK
             };
         }
 
@@ -31,6 +45,21 @@ namespace PLMS.API.ApiHelper
             return new JsonResult(response)
             {
                 StatusCode = statusCode
+            };
+        }
+
+        public static ActionResult CreateValidationErrorResponse(ModelStateDictionary ModelState)
+        {
+            var errorMessage = string.Join(", ", ModelState.Values.First().Errors.First().ErrorMessage);
+            var response = new
+            {
+                IsSuccess = false,
+                Errors = errorMessage
+            };
+
+            return new JsonResult(response)
+            {
+                StatusCode = StatusCodes.Status400BadRequest
             };
         }
     }

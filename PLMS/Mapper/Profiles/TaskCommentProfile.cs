@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
-using PLMS.API.Models;
-using PLMS.BLL.DTO;
+using PLMS.API.Models.ModelsComments;
+using PLMS.BLL.DTO.CommentsDto;
 
 namespace PLMS.API.Mapper.Profiles
 {
@@ -10,7 +10,6 @@ namespace PLMS.API.Mapper.Profiles
         {
             CreateMap<TaskCommentModel, TaskCommentDto>()
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-                .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ReverseMap();
         }
     }

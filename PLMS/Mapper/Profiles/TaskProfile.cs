@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using PLMS.API.Models.ModelsTasks;
-using PLMS.BLL.DTO;
+using PLMS.BLL.DTO.TasksDto;
 
 namespace PLMS.API.Mapper.Profiles
 {
@@ -8,17 +8,23 @@ namespace PLMS.API.Mapper.Profiles
     {
         public TaskProfile() 
         {
-            CreateMap<EditTaskDto, EditTaskModel>()
-                .ForMember(dest => dest.Goal, opt => opt.Ignore())
+            CreateMap<TaskBaseModel, TaskBaseDto>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ReverseMap();
-            CreateMap<TaskModelBase, AddTaskDto>()
+
+            CreateMap<TaskBaseModel, AddTaskDto>()
+                .ForMember(dest => dest.UserId, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ReverseMap();
-            CreateMap<TaskShortDto, TaskShortModel>().ReverseMap();
-            CreateMap<TaskFullDetailsDto, TaskFullDetailsModel>().ReverseMap();
-            CreateMap<TaskShortWithCommentsDto, TaskShortWithCommentsModel>().ReverseMap();
-            CreateMap<GetTaskDto, GetTaskModel>().ReverseMap();
+
+            CreateMap<TaskShortDto, TaskShortViewModel>();
+
+            CreateMap<TaskFullDetailsDto, TaskFullDetailsViewModel>();
+
+            CreateMap<TaskShortWithCommentsDto, TaskShortWithCommentsViewModel>();
+
+            CreateMap<GetTaskDto, GetTaskViewModel>();
         }
     }
 }

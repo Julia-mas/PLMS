@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PLMS.API.ApiHelper;
 using PLMS.API.Models.ModelsTasks;
-using PLMS.BLL.DTO;
+using PLMS.BLL.DTO.TasksDto;
 using PLMS.BLL.Filters;
 using PLMS.BLL.ServicesInterfaces;
 using PLMS.Common.Exceptions;
@@ -27,17 +27,13 @@ namespace PLMS.API.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<GetTaskModel>> GetById(int id)
+        public async Task<ActionResult<GetTaskViewModel>> GetById(int id)
         {
             string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             GetTaskDto taskDto;
             try
             {
                 taskDto = await _taskService.GetTaskByIdAsync(id, userId);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status403Forbidden);
             }
             catch (NotFoundException ex)
             {
@@ -46,48 +42,43 @@ namespace PLMS.API.Controllers
 
             if(!ModelState.IsValid)
             {
-                var errorMessage = string.Join(", ", ModelState.Values.First().Errors.First().ErrorMessage);
-                return ApiResponseHelper.CreateErrorResponse(errorMessage, StatusCodes.Status400BadRequest);
+                ApiResponseHelper.CreateValidationErrorResponse(ModelState);
             }
 
-            var taskModel = _mapper.Map<GetTaskModel>(taskDto);
+            var taskModel = _mapper.Map<GetTaskViewModel>(taskDto);
 
-            return Ok(taskModel);
+            return ApiResponseHelper.CreateOkResponseWithoutMessage(taskModel);
         }
 
         [HttpPut("{id}")]
-        public async Task<ActionResult> Edit(EditTaskModel model, int id)
+        public async Task<ActionResult> Edit(TaskBaseModel model, int id)
         {
             if (!ModelState.IsValid)
             {
-                var errorMessage = string.Join(", ", ModelState.Values.First().Errors.First().ErrorMessage);
-                return ApiResponseHelper.CreateErrorResponse(errorMessage, StatusCodes.Status400BadRequest);
+                return ApiResponseHelper.CreateValidationErrorResponse(ModelState);
             }
-            var taskDto = _mapper.Map<EditTaskDto>(model);
+            var taskDto = _mapper.Map<TaskBaseDto>(model);
+            taskDto.Id = id;
 
             try
             {
                 string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                await _taskService.EditTaskAsync(taskDto, id, userId);
+                await _taskService.EditTaskAsync(taskDto, userId);
             }
             catch (DbUpdateConcurrencyException ex)
             {
                 return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status500InternalServerError);
-            }
-            catch (UnauthorizedAccessException ex) 
-            {
-                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status403Forbidden);
             }
             catch (NotFoundException ex)
             {
                 return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
             }
 
-            return ApiResponseHelper.CreateOkResponse<string>("Task was updated successfully");
+            return ApiResponseHelper.CreateOkResponseWithMessage<string>("Task was updated successfully");
         }
 
         [HttpPost]
-        public async Task<ActionResult<TaskModelBase>> Add(TaskModelBase model)
+        public async Task<ActionResult<TaskBaseModel>> Add(TaskBaseModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -95,9 +86,24 @@ namespace PLMS.API.Controllers
                 return ApiResponseHelper.CreateErrorResponse(errorMessage, StatusCodes.Status400BadRequest);
             }
             var taskDto = _mapper.Map<AddTaskDto>(model);
-            int idTask = await _taskService.AddTaskAsync(taskDto);
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            taskDto.UserId = userId;
+            int idTask;
 
-            return ApiResponseHelper.CreateOkResponse("Task was added successfully", StatusCodes.Status200OK, idTask);
+            try
+            {
+                idTask = await _taskService.AddTaskAsync(taskDto);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
+            }
+            catch (NotFoundException ex)
+            {
+                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
+            }
+
+            return ApiResponseHelper.CreateOkResponseWithMessage("Task was added successfully", idTask);
         }
 
         [HttpDelete]
@@ -108,42 +114,57 @@ namespace PLMS.API.Controllers
                 string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 await _taskService.DeleteTaskAsync(id, userId);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (NotFoundException ex)
             {
-                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status403Forbidden);
+                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
             }
 
-            return ApiResponseHelper.CreateOkResponse<string>("Task was deleted successfully");
+            return ApiResponseHelper.CreateOkResponseWithMessage<string>("Task was deleted successfully");
         }
 
         [HttpGet("GetFilteredShort")]
-        public async Task<ActionResult<IEnumerable<TaskShortModel>>> GetFilteredShort([FromQuery] TaskFilter filters)
+        public async Task<ActionResult<IEnumerable<TaskShortViewModel>>> GetFilteredShort([FromQuery] TaskFilter filters)
         {
             filters.UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var taskDto = await _taskService.GetFilteredShortTasksAsync(filters);
-            var taskModel = taskDto.Select(t => _mapper.Map<TaskShortModel>(t));
+            if (string.IsNullOrEmpty(filters.UserId))
+            {
+                return ApiResponseHelper.CreateErrorResponse("Tasks were not found!", StatusCodes.Status404NotFound);
+            }
 
-            return ApiResponseHelper.CreateOkResponse("Returned filtered tasks without details", StatusCodes.Status200OK, taskModel);
+            var taskDto = await _taskService.GetFilteredShortTasksAsync(filters);
+            var taskModel = taskDto.Select(t => _mapper.Map<TaskShortViewModel>(t));
+
+            return ApiResponseHelper.CreateOkResponseWithoutMessage(taskModel);
         }
 
         [HttpGet("GetFilteredShortWithComments")]
-        public async Task<ActionResult<TaskShortWithCommentsModel>> GetFilteredShortWithComments([FromQuery] TaskFilter filters)
+        public async Task<ActionResult<TaskShortWithCommentsViewModel>> GetFilteredShortWithComments([FromQuery] TaskFilter filters)
         {
             filters.UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var taskDto = await _taskService.GetFilteredShortWithCommentsAsync(filters);
-            var taskModel = taskDto.Select(t => _mapper.Map<TaskShortWithCommentsModel>(t));
+            if (string.IsNullOrEmpty(filters.UserId)) 
+            {
+                return ApiResponseHelper.CreateErrorResponse("Tasks were not found!", StatusCodes.Status404NotFound);
+            }
 
-            return ApiResponseHelper.CreateOkResponse("Returned filtered tasks with comments", StatusCodes.Status200OK, taskModel);
+            var taskDto = await _taskService.GetFilteredShortWithCommentsAsync(filters);
+            var taskModel = taskDto.Select(t => _mapper.Map<TaskShortWithCommentsViewModel>(t));
+
+            return ApiResponseHelper.CreateOkResponseWithoutMessage(taskModel);
         }
 
         [HttpGet("GetFilteredFull")]
-        public async Task<ActionResult<IEnumerable<TaskFullDetailsModel>>> GetFilteredFull([FromQuery] TaskFilter filters)
+        public async Task<ActionResult<IEnumerable<TaskFullDetailsViewModel>>> GetFilteredFull([FromQuery] TaskFilter filters)
         {
             filters.UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var taskDto = await _taskService.GetFilteredFullAsync(filters);
-            var taskModel = taskDto.Select(t => _mapper.Map<TaskFullDetailsModel>(t));
+            if (string.IsNullOrEmpty(filters.UserId))
+            {
+                return ApiResponseHelper.CreateErrorResponse("Tasks were not found!", StatusCodes.Status404NotFound);
+            }
 
-            return ApiResponseHelper.CreateOkResponse("Returned filtered tasks with full details", StatusCodes.Status200OK, taskModel);
+            var taskDto = await _taskService.GetFilteredFullAsync(filters);
+            var taskModel = taskDto.Select(t => _mapper.Map<TaskFullDetailsViewModel>(t));
+
+            return ApiResponseHelper.CreateOkResponseWithoutMessage(taskModel);
         }
     }
 }
