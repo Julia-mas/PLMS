@@ -57,7 +57,7 @@ namespace PLMS.API.Controllers
             {
                 return ApiResponseHelper.CreateValidationErrorResponse(ModelState);
             }
-            var taskDto = _mapper.Map<TaskBaseDto>(model);
+            var taskDto = _mapper.Map<EditTaskDto>(model);
             taskDto.Id = id;
 
             try
@@ -93,10 +93,6 @@ namespace PLMS.API.Controllers
             try
             {
                 idTask = await _taskService.AddTaskAsync(taskDto);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
             }
             catch (NotFoundException ex)
             {

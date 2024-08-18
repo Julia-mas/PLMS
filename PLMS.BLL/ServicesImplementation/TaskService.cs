@@ -32,7 +32,7 @@ namespace PLMS.BLL.ServicesImplementation
             var goal = await _goalRepository.GetByIdAsync(taskDto.GoalId) ?? throw new NotFoundException("Goal was not found");
             if (goal != null && goal.UserId != taskDto.UserId)
             {
-                throw new UnauthorizedAccessException("Can't add this task!");
+                throw new NotFoundException("Goal was not found.");
             }
 
             var task = _mapper.Map<Task>(taskDto);
@@ -60,7 +60,7 @@ namespace PLMS.BLL.ServicesImplementation
             await _unitOfWork.CommitChangesToDatabaseAsync();
         }
 
-        public async System.Threading.Tasks.Task EditTaskAsync(TaskBaseDto taskDto, string userId)
+        public async System.Threading.Tasks.Task EditTaskAsync(EditTaskDto taskDto, string userId)
         {
             var task = await _taskRepository.GetByPredicateAsync(t => t.Id == taskDto.Id, t => t.Goal) ?? throw new NotFoundException("Task was not found");
 

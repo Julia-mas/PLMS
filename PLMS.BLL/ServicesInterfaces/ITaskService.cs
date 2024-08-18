@@ -7,7 +7,7 @@ namespace PLMS.BLL.ServicesInterfaces
     {
         Task<GetTaskDto> GetTaskByIdAsync(int id, string userId);
         Task<AddTaskDto> GetTaskByIncludeObjectsIdAsync(int id);
-        Task EditTaskAsync(TaskBaseDto taskDto, string userId);
+        Task EditTaskAsync(EditTaskDto taskDto, string userId);
         Task DeleteTaskAsync(int id, string userId);
         Task<int> AddTaskAsync(AddTaskDto taskDto);
         Task<IEnumerable<TaskShortDto>> GetFilteredShortTasksAsync(TaskFilter filters);

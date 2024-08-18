@@ -8,14 +8,13 @@ namespace PLMS.API.Mapper.Profiles
     {
         public TaskProfile() 
         {
-            CreateMap<TaskBaseModel, TaskBaseDto>()
+            CreateMap<TaskBaseModel, EditTaskDto>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ReverseMap();
 
             CreateMap<TaskBaseModel, AddTaskDto>()
                 .ForMember(dest => dest.UserId, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-                .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ReverseMap();
 
             CreateMap<TaskShortDto, TaskShortViewModel>();
