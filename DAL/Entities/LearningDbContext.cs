@@ -8,7 +8,12 @@ namespace PLMS.DAL.Entities
 {
     public class LearningDbContext : IdentityDbContext<User>
     {
-        public static readonly ILoggerFactory MyLoggerFactory = LoggerFactory.Create(builder => { builder.AddConsole(); });
+        public static readonly ILoggerFactory MyLoggerFactory = LoggerFactory.Create(builder =>
+        {
+#if DEBUG
+            builder.AddConsole();
+#endif 
+        });
 
         public LearningDbContext(DbContextOptions<LearningDbContext> options) : base(options)
         {
@@ -97,10 +102,10 @@ namespace PLMS.DAL.Entities
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            if (!optionsBuilder.IsConfigured)
-            {
-                optionsBuilder.UseLoggerFactory(MyLoggerFactory);
-            }
+#if DEBUG
+            optionsBuilder.UseLoggerFactory(MyLoggerFactory);
+            optionsBuilder.EnableSensitiveDataLogging(); 
+#endif
             base.OnConfiguring(optionsBuilder);
         }
     }
