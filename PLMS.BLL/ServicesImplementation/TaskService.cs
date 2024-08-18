@@ -1,206 +1,213 @@
-﻿using PLMS.BLL.DTO;
-using PLMS.BLL.ServicesInterfaces;
-using PLMS.DAL.Entities;
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using PLMS.BLL.DTO.TasksDto;
 using PLMS.BLL.Filters;
+using PLMS.BLL.ServicesInterfaces;
+using PLMS.Common.Exceptions;
+using PLMS.DAL.Entities;
 using PLMS.DAL.Interfaces;
+using System.Linq.Expressions;
 using Task = PLMS.DAL.Entities.Task;
 
 namespace PLMS.BLL.ServicesImplementation
 {
     public class TaskService : ITaskService
     {
-
         private readonly IUnitOfWork _unitOfWork;
 
+        private readonly IMapper _mapper;
         private readonly IRepository<Task> _taskRepository;
+        private readonly IRepository<Goal> _goalRepository;
 
-        public TaskService(IUnitOfWork unitOfWork)
+        public TaskService(IUnitOfWork unitOfWork, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
+            _mapper = mapper;
             _taskRepository = _unitOfWork.GetRepository<Task>();
-        }
-        public async System.Threading.Tasks.Task AddTaskAsync(TaskDto taskDto)//ToDo: should be a separate DTO class for adding Task
-        {
-            Task task = new()
-            {
-                Title = taskDto.Title,
-                Description = taskDto.Description,
-                //GoalId = taskDto.GoalId,//you can use this for linking existing Goal
-                //Goal = taskDto.GoalDto, //you can use this for creating a new Goal, don't forget to map it from DTO to EF entity
-                //Category = taskDto.CategoryDto,//same
-                //Priority = taskDto.PriorityDto//same
-                CreatedAt = taskDto.CreatedAt,//TODO: User should not be able to set this field, it should not be present in the DTO, it should be autofilled here instead
-                DueDate = taskDto.DueDate,
-                TaskComments = taskDto.Comments.Select(x => new TaskComment { Comment = x.Comment, CreatedAt = x.CreatedAt}).ToArray()
-            };
-            await _taskRepository.CreateAsync(task);
-            await _unitOfWork.CommitChangesToDatabaseAsync();
+            _goalRepository = _unitOfWork.GetRepository<Goal>();
         }
 
-        public async System.Threading.Tasks.Task DeleteTaskAsync(int id)
+        public async Task<int> AddTaskAsync(AddTaskDto taskDto)
         {
-            Task task = await _taskRepository.GetByIdAsync(id);
+            var goal = await _goalRepository.GetByIdAsync(taskDto.GoalId) ?? throw new NotFoundException("Goal was not found");
+            if (goal != null && goal.UserId != taskDto.UserId)
+            {
+                throw new NotFoundException("Goal was not found.");
+            }
+
+            var task = _mapper.Map<Task>(taskDto);
+            await _taskRepository.CreateAsync(task);
+            await _unitOfWork.CommitChangesToDatabaseAsync();
+
+            return task.Id;
+        }
+
+        public async System.Threading.Tasks.Task DeleteTaskAsync(int id, string userId)
+        {
+            Task? task = await _taskRepository.GetByPredicateAsync(t => t.Id == id, t => t.Goal);
 
             if (task == null)
             {
                 return;
             }
 
+            if (task.Goal.UserId != userId)
+            {
+                throw new NotFoundException("Task was not found");
+            }
+
             _taskRepository.Remove(task);
             await _unitOfWork.CommitChangesToDatabaseAsync();
         }
 
-        public async System.Threading.Tasks.Task EditTaskAsync(TaskDto taskDto)//ToDo: should be a separate DTO class for editing Task
+        public async System.Threading.Tasks.Task EditTaskAsync(EditTaskDto taskDto, string userId)
         {
-            Task task = await _taskRepository.GetByIdAsync(taskDto.Id);
+            var task = await _taskRepository.GetByPredicateAsync(t => t.Id == taskDto.Id, t => t.Goal) ?? throw new NotFoundException("Task was not found");
+
+            if (task.Goal.UserId != userId)
+            {
+                throw new NotFoundException("Task was not found");
+            }
+
+            task.Title = taskDto.Title != default ? taskDto.Title: task.Title;
+            task.Description = taskDto.Description ?? task.Description;   
+            task.DueDate = taskDto.DueDate != default ? taskDto.DueDate : task.DueDate;
+            task.StatusId = taskDto.StatusId != default ? taskDto.StatusId : task.StatusId;
+            task.PriorityId = taskDto.PriorityId != default ? taskDto.PriorityId : task.PriorityId;
+            task.GoalId = taskDto.GoalId != default ? taskDto.GoalId : task.GoalId;
+
             _taskRepository.Update(task);
             await _unitOfWork.CommitChangesToDatabaseAsync();
         }
 
-        public async Task<IEnumerable<TaskDto>> GetFilteredFullAsync(MyItemFilter filters)
+        public async Task<IEnumerable<TaskFullDetailsDto>> GetFilteredFullAsync(TaskFilter filters)
         {
-            IEnumerable<Task> tasks = await _taskRepository.GetFilteredAsync(
-                t => (filters.PriorityIds == null || filters.PriorityIds.Contains(t.PriorityId)) //todo: formatting + mb move it into a separate method
-                    && (filters.StatusIds == null || filters.StatusIds.Contains(t.StatusId)) &&
-                (filters.GoalIds == null || filters.GoalIds.Contains(t.GoalId.ToString())) &&
-                (filters.CategoryIds == null || filters.CategoryIds.Contains(t.GoalId.ToString())),
-                q => q.OrderBy(t => t.DueDate),//ToDo: add full implementation according to the filter & move it into a separate method; This method should work with and return IQueryable
-                "TaskComments,Goal,Priority,Status");
-
-            //TODO: now apply skip/take here; you should apply it on IQueryable, then you can apply ToArray()
+            var tasks = await GetFilteredTasksAsync(filters);
 
             if (tasks == null || !tasks.Any())
             {
-                return Enumerable.Empty<TaskDto>();
+                return Enumerable.Empty<TaskFullDetailsDto>();
             }
 
-            if (tasks.Count() < filters.ItemsPerPageCount)//Todo: simply remove this block
-            {
-                filters.ItemsPerPageCount = tasks.Count();//don't change input params inside a function
-            }
+            var fullTasks = _mapper.Map<Task[], TaskFullDetailsDto[]>(tasks.ToArray());
 
-            var results = tasks.Take(filters.ItemsPerPageCount).Select(t =>//ToDo: remove Take here, just leave mapping; mapping can be moved into a separate method for clarity
-            new TaskDto
-            {
-                Title = t.Title,
-                Description = t.Description,
-                GoalTitle = t.Goal.Title,//ToDo: cover null-ref case (if task doesn't have a goal); you can use null propagation operator
-                CategoryId = t.Goal.Category.Id,//ToDo: cover null-ref case (if task doesn't have a category
-                Comments = t.TaskComments.Select(tс => new TaskCommentDto//ToDo: cover null-ref case (if task doesn't have the comments
-                { 
-                    Comment = tс.Comment, 
-                    CreatedAt = tс.CreatedAt 
-                }).ToArray(),
-                PriorityId = t.Priority.Id,//ToDo: cover null-ref case (if task doesn't have a priority (if that's possible)
-                StatusId = t.Status.Id,//ToDo: cover null-ref case (if task doesn't have a status (if that's possible)
-                CreatedAt = t.CreatedAt,
-                DueDate = t.DueDate
-            }).ToArray();
-
-            return results;
+            return fullTasks;
         }
 
-        //ToDo: apply the same as in the method above, plus remove sortField, includeColumns;
-        //you can reuse ApplyFilter, ApplySorting as in the method above
-        public async Task<IEnumerable<TaskDto>> GetFilteredShortTasksAsync(MyItemFilter filters, string sortField, string includeColumns)
+        public async Task<IEnumerable<TaskShortDto>> GetFilteredShortTasksAsync(TaskFilter filters)
         {
-            Func<IQueryable<Task>, IOrderedQueryable<Task>>? orderBy = null;
-            if (sortField == "CreatedAt")
+            var tasks = await GetFilteredTasksAsync(filters);
+
+            if (tasks == null || !tasks.Any())
             {
-                orderBy = q => q.OrderByDescending(t => t.CreatedAt);
-            }
-            else
-            {
-                orderBy = q => q.OrderBy(t => t.DueDate);
+                return Enumerable.Empty<TaskShortDto>();
             }
 
-            IEnumerable<Task> tasks = await _taskRepository.GetFilteredAsync(
-                t => (filters.PriorityIds == null || filters.PriorityIds.Contains(t.PriorityId)) &&
-                (filters.StatusIds == null || filters.StatusIds.Contains(t.StatusId)),
-                orderBy,
-                "");
-
-            if (!tasks.Any()) 
-            {
-                return Enumerable.Empty<TaskDto>();
-            }
-
-            if (tasks.Count() < filters.ItemsPerPageCount)
-            {
-                filters.ItemsPerPageCount = tasks.Count();
-            }
-
-            IEnumerable<TaskDto> results = tasks.Take(filters.ItemsPerPageCount).Select(t =>
-            new TaskDto
-            {
-                Title = t.Title,
-                DueDate = t.DueDate,
-                CreatedAt = t.CreatedAt
-            }).ToArray(); ;
-
-            return results;
+            var shortTasks = _mapper.Map<Task[], TaskShortDto[]>(tasks.ToArray());
+            
+            return shortTasks;
         }
 
-        //ToDo: apply the same as in the method above
-        public async Task<IEnumerable<TaskDto>> GetFilteredShortWithCommentsAsync(MyItemFilter filters)
+        public async Task<IEnumerable<TaskShortWithCommentsDto>> GetFilteredShortWithCommentsAsync(TaskFilter filters)
         {
-            IEnumerable<Task> tasks = await _taskRepository.GetFilteredAsync(
-                t => (filters.PriorityIds == null || filters.PriorityIds.Contains(t.PriorityId)) &&
-                (filters.StatusIds == null || filters.StatusIds.Contains(t.StatusId)),
-                q => q.OrderByDescending(t => t.TaskComments.Select(tc => tc.CreatedAt)),
-                "TaskComments,Goal");
+            var tasks = await GetFilteredTasksAsync(filters);
 
-            if (!tasks.Any())
+            if (tasks == null || !tasks.Any())
             {
-                return Enumerable.Empty<TaskDto>();
+                return Enumerable.Empty<TaskShortWithCommentsDto>();
             }
 
-            if (tasks.Count() < filters.ItemsPerPageCount)
-            {
-                filters.ItemsPerPageCount = tasks.Count();
-            }
+            var shortTasksWithComments = _mapper.Map<Task[], TaskShortWithCommentsDto[]>(tasks.ToArray());
 
-            var results = tasks.Take(filters.ItemsPerPageCount).Select(t =>
-            new TaskDto
-            {
-                Title = t.Title,
-                GoalTitle = t.Goal.Title,
-                Comments = t.TaskComments.Select(tс => new TaskCommentDto 
-                { 
-                    Comment = tс.Comment, 
-                    CreatedAt = tс.CreatedAt 
-                }).ToArray()
-
-            }).ToArray();
-
-            return results;
+            return shortTasksWithComments;
         }
 
-        public async Task<TaskDto> GetTaskByIdAsync(int id)
+        public async Task<GetTaskDto> GetTaskByIdAsync(int id, string userId)
         {
-            var task = await _taskRepository.GetByIdAsync(id);
+            var task = await _taskRepository.GetByPredicateAsync(t => t.Id == id, t => t.Goal, t => t.Status, t => t.Priority) ?? throw new NotFoundException("Task was not found");
 
-            //ToDo: all null checking for entire task object as well as for some fields like Priority, Status, Goal, etc
-
-            TaskDto taskDto = new()
+            if (task.Goal.UserId != userId)
             {
-                Title = task.Title,
-                Description = task.Description,
-                GoalTitle = task.Goal.Title,
-                Comments = task.TaskComments.Select(
-                    t => new TaskCommentDto
-                    {
-                        Comment = t.Comment,
-                        CreatedAt = t.CreatedAt
-                    }),
-                CreatedAt = task.CreatedAt,
-                DueDate = task.DueDate,
-                PriorityId = task.Priority.Id,
-                StatusId = task.Status.Id,
-                CategoryId = task.Goal.Category.Id
-            };
+                throw new NotFoundException("Task was not found");
+            }
+
+            var taskDto = _mapper.Map<GetTaskDto>(task);
 
             return taskDto;
+        }
+
+        public async Task<AddTaskDto> GetTaskByIncludeObjectsIdAsync(int id)
+        {
+            var task = await _taskRepository.GetByPredicateAsync(t => t.Id.Equals(id),
+                t => t.Priority,
+                t => t.Status,
+                t => t.Goal,
+                t => t.Goal.Priority,
+                t => t.Goal.Status,
+                t => t.Goal.Category,
+                t => t.TaskComments);
+
+            var taskDto = _mapper.Map<AddTaskDto>(task);
+            return taskDto;
+        }
+
+        private async Task<IEnumerable<Task>> GetFilteredTasksAsync(TaskFilter filters)
+        {
+            var filterExpression = ApplyFilters(filters);
+            var orderFunction = ApplyOrder(filters);
+
+            // Apply filtation and sorting on the DB level.
+            var query = _taskRepository.GetAll()
+                                       .Include(t => t.Goal)
+                                       .ThenInclude(g => g.Category)
+                                       .Include(t => t.Goal)
+                                       .ThenInclude(g => g.GoalComments)
+                                       .Include(t => t.Priority)
+                                       .Include(t => t.Status)
+                                       .Include(t => t.TaskComments)
+                                       .Where(filterExpression);
+
+            var orderedQuery = orderFunction(query);
+
+            // Pagination
+            var paginatedQuery = orderedQuery.Skip((filters.PageNumber - 1) * filters.ItemsPerPageCount)
+                                             .Take(filters.ItemsPerPageCount);
+
+            // Call to the DB
+            var tasks = await paginatedQuery.ToListAsync();
+
+            return tasks;
+        }
+
+        private static Func<IQueryable<Task>, IOrderedQueryable<Task>> ApplyOrder(TaskFilter filters)
+        {
+            return q =>
+            {
+                switch (filters.SortField)
+                {
+                    case TaskFilter.TaskSortFields.Priority:
+                        return filters.SortOrder == BaseFilter.SortOrders.Asc ? q.OrderBy(t => t.Priority.Title) : q.OrderByDescending(t => t.Priority.Title);
+                    case TaskFilter.TaskSortFields.Status:
+                        return filters.SortOrder == BaseFilter.SortOrders.Asc ? q.OrderBy(t => t.Status.Title) : q.OrderByDescending(t => t.Status.Title);
+                    case TaskFilter.TaskSortFields.DueDate:
+                        return filters.SortOrder == BaseFilter.SortOrders.Asc ? q.OrderBy(t => t.DueDate) : q.OrderByDescending(t => t.DueDate);
+                    case TaskFilter.TaskSortFields.CreatedAt:
+                        return filters.SortOrder == BaseFilter.SortOrders.Asc ? q.OrderBy(t => t.CreatedAt) : q.OrderByDescending(t => t.CreatedAt);
+                    case TaskFilter.TaskSortFields.Category:
+                        return filters.SortOrder == BaseFilter.SortOrders.Asc ? q.OrderBy(t => t.Goal.CategoryId) : q.OrderByDescending(t => t.Goal.CategoryId);
+                    default:
+                        return q.OrderByDescending(t => t.Priority.Title);
+                }
+            };
+        }
+
+        private static Expression<Func<Task, bool>> ApplyFilters(TaskFilter filters)
+        {
+            return t => (t.Goal.UserId.Contains(filters.UserId))
+                && (filters.PriorityIds == null || filters.PriorityIds.Contains(t.PriorityId))
+                && (filters.StatusIds == null || filters.StatusIds.Contains(t.StatusId))
+                && (filters.GoalIds == null || filters.GoalIds.Contains(t.GoalId.ToString()))
+                && (filters.CategoryIds == null || filters.CategoryIds.Contains(t.Goal.CategoryId.ToString())); ;
         }
     }
 }

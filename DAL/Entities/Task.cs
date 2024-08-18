@@ -10,11 +10,10 @@
         public DateTime DueDate { get; set; }
         public int StatusId { get; set; }
         public int PriorityId { get; set; }
+
         public Goal Goal { get; set; } = null!;
-
-        public Status Status { get; set; } = null!;
+        public Status Status { get; set; } =  null!;
         public Priority Priority { get; set; } = null!;
-
         public ICollection<TaskComment> TaskComments { get; set; } = new List<TaskComment>();
     }
 }

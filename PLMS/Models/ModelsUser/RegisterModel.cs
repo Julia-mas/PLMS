@@ -1,4 +1,4 @@
-﻿namespace PLMS.API.Models
+﻿namespace PLMS.API.Models.ModelsUser
 {
     public class RegisterModel
     {

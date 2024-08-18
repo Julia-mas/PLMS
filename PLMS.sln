@@ -19,7 +19,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UISchema", "UISchema", "{10
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PLMS.BLL", "PLMS.BLL", "{97D68BFE-F7AC-48F2-AF7F-25FD6BCA4DE2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PLMS.BLL", "PLMS.BLL\PLMS.BLL.csproj", "{C36464A5-C495-4DAF-B757-E38087A88060}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PLMS.BLL", "PLMS.BLL\PLMS.BLL.csproj", "{C36464A5-C495-4DAF-B757-E38087A88060}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PLMS.Common", "PLMS.Common\PLMS.Common.csproj", "{131DE959-9428-4333-9729-EB22B2507EAA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,6 +45,10 @@ Global
 		{C36464A5-C495-4DAF-B757-E38087A88060}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C36464A5-C495-4DAF-B757-E38087A88060}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C36464A5-C495-4DAF-B757-E38087A88060}.Release|Any CPU.Build.0 = Release|Any CPU
+		{131DE959-9428-4333-9729-EB22B2507EAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{131DE959-9428-4333-9729-EB22B2507EAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{131DE959-9428-4333-9729-EB22B2507EAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{131DE959-9428-4333-9729-EB22B2507EAA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

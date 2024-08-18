@@ -9,10 +9,14 @@
         }
 
         public int PageNumber { get; set; } = 1;
+
         public int ItemsPerPageCount { get; set; } = 10;
+
         public string SearchString { get; set; } = string.Empty;
+
         public SortOrders SortOrder { get; set; }
-        //todo: add UsereName because we will need it in all filtering
+
+        public string UserId { get; set; } = string.Empty;
     }
 }
 
