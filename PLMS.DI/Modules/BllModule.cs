@@ -8,7 +8,12 @@ namespace PLMS.DI.Modules
     {
         protected override void Load(ContainerBuilder builder) 
         {
+            builder.RegisterType<PermissionService>().As<IPermissionService>().InstancePerLifetimeScope();
             builder.RegisterType<TaskService>().As<ITaskService>().InstancePerLifetimeScope();
+            builder.RegisterType<CategoryService>().As<ICategoryService>().InstancePerLifetimeScope();
+            builder.RegisterType<GoalService>().As<IGoalService>().InstancePerLifetimeScope();
+            builder.RegisterType<GoalCommentService>().As<IGoalCommentService>().InstancePerLifetimeScope();
+            builder.RegisterType<TaskCommentService>().As<ITaskCommentService>().InstancePerLifetimeScope();
         }
     }
 }

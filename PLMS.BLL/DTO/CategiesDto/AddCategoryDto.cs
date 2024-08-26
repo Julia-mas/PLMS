@@ -1,8 +1,9 @@
-﻿namespace PLMS.BLL.DTO.CategoriesDto
+﻿using PLMS.BLL.DTO.CategiesDto;
+
+namespace PLMS.BLL.DTO.CategoriesDto
 {
-    public class AddCategoryDto
+    public class AddCategoryDto : CategoryBaseDto
     {
-        public string Title { get; set; } = null!;
         public string UserId { get; set; } = null!;
     }
 }

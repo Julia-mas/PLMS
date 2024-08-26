@@ -26,29 +26,31 @@ namespace PLMS.API.Controllers
             _mapper = mapper;
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<GetTaskViewModel>> GetById(int id)
+        [HttpPost]
+        public async Task<ActionResult<TaskBaseModel>> Add(TaskBaseModel model)
         {
+            if (!ModelState.IsValid)
+            {
+                var errorMessage = string.Join(", ", ModelState.Values.First().Errors.First().ErrorMessage);
+                return ApiResponseHelper.CreateErrorResponse(errorMessage, StatusCodes.Status400BadRequest);
+            }
+            var taskDto = _mapper.Map<AddTaskDto>(model);
             string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            GetTaskDto taskDto;
+            taskDto.UserId = userId;
+            int taskId;
+
             try
             {
-                taskDto = await _taskService.GetTaskByIdAsync(id, userId);
+                taskId = await _taskService.AddTaskAsync(taskDto);
             }
             catch (NotFoundException ex)
             {
                 return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
             }
 
-            if(!ModelState.IsValid)
-            {
-                ApiResponseHelper.CreateValidationErrorResponse(ModelState);
-            }
-
-            var taskModel = _mapper.Map<GetTaskViewModel>(taskDto);
-
-            return ApiResponseHelper.CreateOkResponseWithoutMessage(taskModel);
+            return ApiResponseHelper.CreateOkResponseWithMessage("Task was added successfully", taskId);
         }
+
 
         [HttpPut("{id}")]
         public async Task<ActionResult> Edit(TaskBaseModel model, int id)
@@ -77,31 +79,6 @@ namespace PLMS.API.Controllers
             return ApiResponseHelper.CreateOkResponseWithMessage<string>("Task was updated successfully");
         }
 
-        [HttpPost]
-        public async Task<ActionResult<TaskBaseModel>> Add(TaskBaseModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                var errorMessage = string.Join(", ", ModelState.Values.First().Errors.First().ErrorMessage);
-                return ApiResponseHelper.CreateErrorResponse(errorMessage, StatusCodes.Status400BadRequest);
-            }
-            var taskDto = _mapper.Map<AddTaskDto>(model);
-            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            taskDto.UserId = userId;
-            int idTask;
-
-            try
-            {
-                idTask = await _taskService.AddTaskAsync(taskDto);
-            }
-            catch (NotFoundException ex)
-            {
-                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
-            }
-
-            return ApiResponseHelper.CreateOkResponseWithMessage("Task was added successfully", idTask);
-        }
-
         [HttpDelete]
         public async Task<ActionResult> Delete(int id)
         {
@@ -116,6 +93,30 @@ namespace PLMS.API.Controllers
             }
 
             return ApiResponseHelper.CreateOkResponseWithMessage<string>("Task was deleted successfully");
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<GetTaskViewModel>> GetById(int id)
+        {
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            GetTaskDto taskDto;
+            try
+            {
+                taskDto = await _taskService.GetTaskByIdAsync(id, userId);
+            }
+            catch (NotFoundException ex)
+            {
+                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
+            }
+
+            if(!ModelState.IsValid)
+            {
+                ApiResponseHelper.CreateValidationErrorResponse(ModelState);
+            }
+
+            var taskModel = _mapper.Map<GetTaskViewModel>(taskDto);
+
+            return ApiResponseHelper.CreateOkResponseWithoutMessage(taskModel);
         }
 
         [HttpGet("GetFilteredShort")]

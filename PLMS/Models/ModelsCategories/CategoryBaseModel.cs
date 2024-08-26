@@ -1,6 +1,6 @@
 ﻿namespace PLMS.API.Models.ModelsCategories
 {
-    public class AddCategoryModel
+    public class CategoryBaseModel
     {
         public string Title { get; set; } = null!;
     }
