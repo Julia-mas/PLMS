@@ -40,8 +40,8 @@ namespace PLMS.BLL.ServicesImplementation
 
         public async Task EditGoalComment(EditGoalCommentDto commentDto, string userId)
         {
-            var goalComment = await _goalCommentRepository.GetByPredicateAsync(gc => gc.Id == commentDto.Id) ?? throw new NotFoundException("Goal comment was not found");
-            if (!await _permissionService.HasPermissionToGoal(goalComment.GoalId, userId))
+            var goalComment = await _goalCommentRepository.GetByPredicateAsync(gc => gc.Id == commentDto.Id);
+            if (goalComment == null || !await _permissionService.HasPermissionToGoal(goalComment.GoalId, userId))
             {
                 throw new NotFoundException("Goal was not found.");
             }
@@ -54,14 +54,10 @@ namespace PLMS.BLL.ServicesImplementation
 
         public async Task DeleteGoalComment(int id, string userId)
         {
-            GoalComment? goalComment = await _goalCommentRepository.GetByPredicateAsync(gc => gc.Id.Equals(id)) ?? throw new NotFoundException("Goal comment was not found");
-            if (goalComment == null)
+            GoalComment? goalComment = await _goalCommentRepository.GetByPredicateAsync(gc => gc.Id.Equals(id));
+            if (goalComment == null || !await _permissionService.HasPermissionToGoal(goalComment.GoalId, userId))
             {
                 return;
-            }
-            if (!await _permissionService.HasPermissionToGoal(goalComment.GoalId, userId))
-            {
-                throw new NotFoundException("Goal was not found.");
             }
 
             _goalCommentRepository.Remove(goalComment);
@@ -70,9 +66,8 @@ namespace PLMS.BLL.ServicesImplementation
 
         public async Task<GetGoalCommentDto> GetGoalCommentByIdAsync(int id, string userId)
         {
-            var goalComment = await _goalCommentRepository.GetByPredicateAsync(gc => gc.Id.Equals(id)) ?? throw new NotFoundException("Goal comment was not found");
-
-            if (!await _permissionService.HasPermissionToGoal(goalComment.GoalId, userId))
+            var goalComment = await _goalCommentRepository.GetByPredicateAsync(gc => gc.Id.Equals(id));
+            if (goalComment == null || !await _permissionService.HasPermissionToGoal(goalComment.GoalId, userId))
             {
                 throw new NotFoundException("Goal comment was not found.");
             }

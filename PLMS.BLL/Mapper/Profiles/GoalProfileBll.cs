@@ -22,7 +22,7 @@ namespace PLMS.BLL.Mapper.Profiles
                 .ForMember(dest => dest.CategoryTitle, source => source.MapFrom(s => s.Category.Title))
                 .ForMember(dest => dest.PriorityTitle, source => source.MapFrom(s => s.Priority.Title))
                 .ForMember(dest => dest.StatusTitle, source => source.MapFrom(s => s.Status.Title))
-                .ForMember(dest => dest.TaskTitles, source => source.MapFrom(s => s.Tasks.Select(t => t.Title)));
+                .ForMember(dest => dest.TaskCount, source => source.MapFrom(s => s.Tasks.Count));
         }
     }
 }

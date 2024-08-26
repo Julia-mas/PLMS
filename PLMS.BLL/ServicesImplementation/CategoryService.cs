@@ -29,7 +29,13 @@ namespace PLMS.BLL.ServicesImplementation
 
         public async Task<int> AddCategoryAsync(AddCategoryDto categoryDto)
         {
-            var category = _mapper.Map<Category>(categoryDto);
+            var category = await _categoryRepository.GetByPredicateAsync(c => c.Title == categoryDto.Title && c.UserId == categoryDto.UserId );
+            if (category != null)
+            {
+                return category.Id;
+            }
+
+            category = _mapper.Map<Category>(categoryDto);
 
             await _categoryRepository.CreateAsync(category);
             await _unitOfWork.CommitChangesToDatabaseAsync();
@@ -39,9 +45,9 @@ namespace PLMS.BLL.ServicesImplementation
 
         public async Task EditCategoryAsync(EditCategoryDto categoryDto, string userId)
         {
-            var category = await _categoryRepository.GetByPredicateAsync(c => c.Id == categoryDto.Id) ?? throw new NotFoundException("Category was not found");
+            var category = await _categoryRepository.GetByPredicateAsync(c => c.Id == categoryDto.Id);
 
-            if (!_permissionService.HasPermissionToCategory(category, userId))
+            if (category == null || !_permissionService.HasPermissionToCategory(category, userId))
             {
                 throw new NotFoundException("Category was not found.");
             }
@@ -55,13 +61,10 @@ namespace PLMS.BLL.ServicesImplementation
         public async Task DeleteCategoryAsync(int id, string userId)
         {
             Category? category = await _categoryRepository.GetByPredicateAsync(c => c.Id == id, c => c.Goals);
-            if (category == null)
+
+            if (category == null || !_permissionService.HasPermissionToCategory(category, userId))
             {
                 return;
-            }
-            if (!_permissionService.HasPermissionToCategory(category, userId))
-            {
-                throw new NotFoundException("Category was not found.");
             }
             _categoryRepository.Remove(category);
             await _unitOfWork.CommitChangesToDatabaseAsync();
@@ -69,9 +72,9 @@ namespace PLMS.BLL.ServicesImplementation
 
         public async Task<GetCategoryDto> GetCategoryByIdAsync(int id, string userId)
         {
-            var category = await _categoryRepository.GetByPredicateAsync(c => c.Id == id, c => c.Goals) ?? throw new NotFoundException("Category was not found");
+            var category = await _categoryRepository.GetByPredicateAsync(c => c.Id == id, c => c.Goals);
 
-            if (category.UserId != userId)
+            if (category == null || category.UserId != userId)
             {
                 throw new NotFoundException("Category was not found");
             }
@@ -84,7 +87,7 @@ namespace PLMS.BLL.ServicesImplementation
         public async Task<List<GetCategoryDto>> GetCategorieFilteredAsync(CategoryFilter filters)
         {
             var filterExpression = ApplyFilters(filters);
-            var orderFunction = ApplyOrder();
+            var orderFunction = ApplyOrder(filters);
 
             // Apply filtation and sorting on the DB level.
             var query = _categoryRepository.GetAll().Include(c => c.Goals).Where(filterExpression);
@@ -103,9 +106,9 @@ namespace PLMS.BLL.ServicesImplementation
             return categoriesDto;
         }
 
-        private static Func<IQueryable<Category>, IOrderedQueryable<Category>> ApplyOrder()
+        private static Func<IQueryable<Category>, IOrderedQueryable<Category>> ApplyOrder(CategoryFilter filters)
         {
-            return q => q.OrderByDescending(g => g.Title);
+            return q => filters.SortOrder == BaseFilter.SortOrders.Asc ? q.OrderBy(g => g.Title) : q.OrderByDescending(g => g.Title);
         }
 
         private static Expression<Func<Category, bool>> ApplyFilters(CategoryFilter filters)

@@ -32,6 +32,7 @@ namespace PLMS.API.Controllers
                 var errorMessage = string.Join(", ", ModelState.Values.First().Errors.First().ErrorMessage);
                 return ApiResponseHelper.CreateErrorResponse(errorMessage, StatusCodes.Status400BadRequest);
             }
+
             var goalCommentDto = _mapper.Map<AddGoalCommentDto>(model);
             string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             int commentId;
@@ -55,6 +56,7 @@ namespace PLMS.API.Controllers
             {
                 return ApiResponseHelper.CreateValidationErrorResponse(ModelState);
             }
+
             var commentDto = _mapper.Map<EditGoalCommentDto>(model);
             commentDto.Id = id;
 
@@ -78,15 +80,8 @@ namespace PLMS.API.Controllers
         [HttpDelete]
         public async Task<ActionResult> Delete(int id)
         {
-            try
-            {
-                string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                await _goalCommentService.DeleteGoalComment(id, userId);
-            }
-            catch (NotFoundException ex)
-            {
-                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
-            }
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            await _goalCommentService.DeleteGoalComment(id, userId);
 
             return ApiResponseHelper.CreateOkResponseWithMessage<string>("Goal comment was deleted successfully");
         }
@@ -96,6 +91,7 @@ namespace PLMS.API.Controllers
         {
             string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             GetGoalCommentDto commentDto;
+
             try
             {
                 commentDto = await _goalCommentService.GetGoalCommentByIdAsync(id, userId);
@@ -103,11 +99,6 @@ namespace PLMS.API.Controllers
             catch (NotFoundException ex)
             {
                 return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
-            }
-
-            if (!ModelState.IsValid)
-            {
-                ApiResponseHelper.CreateValidationErrorResponse(ModelState);
             }
 
             var commentModel = _mapper.Map<GetGoalCommentViewModel>(commentDto);

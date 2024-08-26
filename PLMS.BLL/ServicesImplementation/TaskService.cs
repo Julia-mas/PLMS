@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 using PLMS.BLL.DTO.TasksDto;
 using PLMS.BLL.Filters;
 using PLMS.BLL.ServicesInterfaces;
 using PLMS.Common.Exceptions;
 using PLMS.DAL.Interfaces;
+using System.Collections.Immutable;
 using System.Linq.Expressions;
 using Task = PLMS.DAL.Entities.Task;
 
@@ -28,12 +30,17 @@ namespace PLMS.BLL.ServicesImplementation
 
         public async Task<int> AddTaskAsync(AddTaskDto taskDto)
         {
+            var task = await _taskRepository.GetByPredicateAsync( t => t.Title == taskDto.Title, t => t.Goal.UserId == taskDto.UserId);
+            if (task != null)
+            {
+                return task.Id;
+            }
             if (!await _permissionService.HasPermissionToGoal(taskDto.GoalId, taskDto.UserId))
             {
                 throw new NotFoundException("Goal was not found.");
             }
 
-            var task = _mapper.Map<Task>(taskDto);
+            task = _mapper.Map<Task>(taskDto);
             await _taskRepository.CreateAsync(task);
             await _unitOfWork.CommitChangesToDatabaseAsync();
 
@@ -42,9 +49,9 @@ namespace PLMS.BLL.ServicesImplementation
 
         public async System.Threading.Tasks.Task EditTaskAsync(EditTaskDto taskDto, string userId)
         {
-            var task = await _taskRepository.GetByPredicateAsync(t => t.Id == taskDto.Id, t => t.Goal) ?? throw new NotFoundException("Task was not found");
+            var task = await _taskRepository.GetByPredicateAsync(t => t.Id == taskDto.Id, t => t.Goal);
 
-            if (!_permissionService.HasPermissionToGoal(task.Goal, userId))
+            if (task == null || !_permissionService.HasPermissionToGoal(task.Goal, userId))
             {
                 throw new NotFoundException("Task was not found.");
             }
@@ -64,14 +71,9 @@ namespace PLMS.BLL.ServicesImplementation
         {
             Task? task = await _taskRepository.GetByPredicateAsync(t => t.Id == id, t => t.Goal);
 
-            if (task == null)
+            if (task == null || !_permissionService.HasPermissionToGoal(task.Goal, userId))
             {
                 return;
-            }
-
-            if (!_permissionService.HasPermissionToGoal(task.Goal, userId))
-            {
-                throw new NotFoundException("Goal was not found.");
             }
 
             _taskRepository.Remove(task);
@@ -87,7 +89,7 @@ namespace PLMS.BLL.ServicesImplementation
                 return Enumerable.Empty<TaskFullDetailsDto>();
             }
 
-            var fullTasks = _mapper.Map<Task[], TaskFullDetailsDto[]>(tasks.ToArray());
+            var fullTasks = _mapper.Map<TaskFullDetailsDto[]>(tasks.ToArray());
 
             return fullTasks;
         }
@@ -101,7 +103,7 @@ namespace PLMS.BLL.ServicesImplementation
                 return Enumerable.Empty<TaskShortDto>();
             }
 
-            var shortTasks = _mapper.Map<Task[], TaskShortDto[]>(tasks.ToArray());
+            var shortTasks = _mapper.Map<TaskShortDto[]>(tasks.ToArray());
             
             return shortTasks;
         }
@@ -122,9 +124,9 @@ namespace PLMS.BLL.ServicesImplementation
 
         public async Task<GetTaskDto> GetTaskByIdAsync(int id, string userId)
         {
-            var task = await _taskRepository.GetByPredicateAsync(t => t.Id == id, t => t.Goal, t => t.Status, t => t.Priority) ?? throw new NotFoundException("Task was not found");
+            var task = await _taskRepository.GetByPredicateAsync(t => t.Id == id, t => t.Goal, t => t.Status, t => t.Priority);
 
-            if (!_permissionService.HasPermissionToGoal(task.Goal, userId))
+            if (task == null || !_permissionService.HasPermissionToGoal(task.Goal, userId))
             {
                 throw new NotFoundException("Task was not found.");
             }
@@ -173,6 +175,7 @@ namespace PLMS.BLL.ServicesImplementation
 
             // Call to the DB
             var tasks = await paginatedQuery.ToListAsync();
+            tasks.ForEach(t => t.TaskComments.Sort());
 
             return tasks;
         }

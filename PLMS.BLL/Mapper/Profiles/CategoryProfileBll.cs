@@ -14,8 +14,11 @@ namespace PLMS.BLL.Mapper.Profiles
                 .ForMember(dest => dest.Goals, opt => opt.Ignore())
                 .ReverseMap();
 
-            CreateMap<Category, GetCategoryDto>()
-                .ForMember(dest => dest.GoalTitles, source => source.MapFrom(s => s.Goals.Select(t => t.Title)));
+            CreateMap<Category, GetCategoryDto>();
+            
+            CreateMap<Goal, GetCategoryDto.Goal>()
+                .ForMember(dest => dest.Title, source => source.MapFrom(s => s.Title))
+                .ForMember(dest => dest.Id, source => source.MapFrom(s => s.Id));
         }
     }
 }

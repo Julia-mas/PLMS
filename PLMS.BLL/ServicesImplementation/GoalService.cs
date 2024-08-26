@@ -29,12 +29,18 @@ namespace PLMS.BLL.ServicesImplementation
 
         public async Task<int> AddGoalAsync(AddGoalDto goalDto)
         {
+            var goal = await _goalRepository.GetByPredicateAsync(g => g.Title == goalDto.Title && g.UserId == goalDto.UserId);
+            if (goal != null)
+            {
+                return goal.Id;
+            }
+
             if (!await _permissionService.HasPermissionToCategory(goalDto.CategoryId, goalDto.UserId))
             {
                 throw new NotFoundException("Category was not found.");
             }
 
-            var goal = _mapper.Map<Goal>(goalDto);
+            goal = _mapper.Map<Goal>(goalDto);
             await _goalRepository.CreateAsync(goal);
             await _unitOfWork.CommitChangesToDatabaseAsync();
 
@@ -43,9 +49,8 @@ namespace PLMS.BLL.ServicesImplementation
 
         public async Task EditGoalAsync(EditGoalDto goalDto, string userId)
         {
-            var goal = await _goalRepository.GetByPredicateAsync(t => t.Id == goalDto.Id, t => t.Category) ?? throw new NotFoundException("Goal was not found");
-
-            if (!await _permissionService.HasPermissionToCategory(goal.CategoryId, userId))
+            var goal = await _goalRepository.GetByPredicateAsync(t => t.Id == goalDto.Id, t => t.Category);
+            if (goal == null || !await _permissionService.HasPermissionToCategory(goal.CategoryId, userId))
             {
                 throw new NotFoundException("Goal was not found.");
             }
@@ -64,23 +69,19 @@ namespace PLMS.BLL.ServicesImplementation
         public async Task DeleteGoalAsync(int id, string userId)
         {
             Goal? goal = await _goalRepository.GetByPredicateAsync(g => g.Id == id);
-            if (goal == null) 
-            { 
-                return; 
-            }
-            if (!await _permissionService.HasPermissionToCategory(goal.CategoryId, userId))
+            if (goal == null || !await _permissionService.HasPermissionToCategory(goal.CategoryId, userId))
             {
-                throw new NotFoundException("Goal was not found.");
+                return;
             }
+
             _goalRepository.Remove(goal);
             await _unitOfWork.CommitChangesToDatabaseAsync();
         }
 
         public async Task<GetGoalDto> GetGoalByIdAsync(int id, string userId)
         {
-            var goal = await _goalRepository.GetByPredicateAsync(g => g.Id == id, g => g.Category, g => g.Status, g => g.Priority, g => g.Tasks) ?? throw new NotFoundException("Goal was not found");
-
-            if (!_permissionService.HasPermissionToCategory(goal.Category, userId))
+            var goal = await _goalRepository.GetByPredicateAsync(g => g.Id == id, g => g.Category, g => g.Status, g => g.Priority, g => g.Tasks);
+            if (goal == null || !_permissionService.HasPermissionToCategory(goal.Category, userId))
             {
                 throw new NotFoundException("Goal was not found.");
             }
@@ -99,7 +100,6 @@ namespace PLMS.BLL.ServicesImplementation
                 GoalTitle = g.Title,
                 CompletionPercentage = g.Tasks.Any() ? (g.Tasks.Count(t => t.StatusId == (int)StatusEnum.Completed) * 100.0) / g.Tasks.Count() : 0.0
             }).ToListAsync();
-
 
             return new GoalCompletionInfoDto { Goals = taskCompletionPercentage };
         }
@@ -127,6 +127,7 @@ namespace PLMS.BLL.ServicesImplementation
             var goals = await paginatedQuery.ToListAsync();
 
             var goalsDto = _mapper.Map<List<GetGoalDto>>(goals);
+            goalsDto.ForEach(g => g.GoalComments.Sort());
 
             return goalsDto;
         }

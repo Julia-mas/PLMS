@@ -11,6 +11,6 @@ namespace PLMS.BLL.DTO.GoalsDto
         public string PriorityTitle { get; set; } = string.Empty;
 
         public List<GetGoalCommentDto> GoalComments { get; set; } = new List<GetGoalCommentDto>();
-        public List<string> TaskTitles { get; set; } = new List<string>();
+        public int TaskCount { get; set; }
     }
 }

@@ -34,6 +34,7 @@ namespace PLMS.API.Controllers
                 var errorMessage = string.Join(", ", ModelState.Values.First().Errors.First().ErrorMessage);
                 return ApiResponseHelper.CreateErrorResponse(errorMessage, StatusCodes.Status400BadRequest);
             }
+
             var taskDto = _mapper.Map<AddTaskDto>(model);
             string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             taskDto.UserId = userId;
@@ -82,15 +83,8 @@ namespace PLMS.API.Controllers
         [HttpDelete]
         public async Task<ActionResult> Delete(int id)
         {
-            try
-            {
-                string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                await _taskService.DeleteTaskAsync(id, userId);
-            }
-            catch (NotFoundException ex)
-            {
-                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
-            }
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            await _taskService.DeleteTaskAsync(id, userId);
 
             return ApiResponseHelper.CreateOkResponseWithMessage<string>("Task was deleted successfully");
         }
@@ -109,11 +103,6 @@ namespace PLMS.API.Controllers
                 return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
             }
 
-            if(!ModelState.IsValid)
-            {
-                ApiResponseHelper.CreateValidationErrorResponse(ModelState);
-            }
-
             var taskModel = _mapper.Map<GetTaskViewModel>(taskDto);
 
             return ApiResponseHelper.CreateOkResponseWithoutMessage(taskModel);
@@ -129,7 +118,7 @@ namespace PLMS.API.Controllers
             }
 
             var taskDto = await _taskService.GetFilteredShortTasksAsync(filters);
-            var taskModel = taskDto.Select(t => _mapper.Map<TaskShortViewModel>(t));
+            var taskModel = _mapper.Map<IEnumerable<TaskShortViewModel>>(taskDto);
 
             return ApiResponseHelper.CreateOkResponseWithoutMessage(taskModel);
         }
@@ -138,7 +127,7 @@ namespace PLMS.API.Controllers
         public async Task<ActionResult<TaskShortWithCommentsViewModel>> GetFilteredShortWithComments([FromQuery] TaskFilter filters)
         {
             filters.UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(filters.UserId)) 
+            if (string.IsNullOrEmpty(filters.UserId))
             {
                 return ApiResponseHelper.CreateErrorResponse("Tasks were not found!", StatusCodes.Status404NotFound);
             }
@@ -159,7 +148,7 @@ namespace PLMS.API.Controllers
             }
 
             var taskDto = await _taskService.GetFilteredFullAsync(filters);
-            var taskModel = taskDto.Select(t => _mapper.Map<TaskFullDetailsViewModel>(t));
+            var taskModel = _mapper.Map<IEnumerable<TaskFullDetailsViewModel>>(taskDto);
 
             return ApiResponseHelper.CreateOkResponseWithoutMessage(taskModel);
         }

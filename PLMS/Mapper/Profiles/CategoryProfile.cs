@@ -10,6 +10,8 @@ namespace PLMS.API.Mapper.Profiles
         {
             CreateMap<GetCategoryDto, GetCategoryViewModel>();
 
+            CreateMap<GetCategoryDto.Goal, GetCategoryViewModel.Goal>();
+
             CreateMap<CategoryBaseModel, AddCategoryDto>()
                 .ForMember(dest => dest.UserId, opt => opt.Ignore());
 

@@ -40,10 +40,10 @@ namespace PLMS.BLL.ServicesImplementation
 
         public async Task EditTaskComment(EditTaskCommentDto commentDto, string userId)
         {
-            var taskComment = await _taskCommentRepository.GetByPredicateAsync(tc => tc.Id == commentDto.Id) ?? throw new NotFoundException("GoalComment was not found");
-            if (!await _permissionService.HasPermissionToGoalAndTask(taskComment.TaskId, userId))
+            var taskComment = await _taskCommentRepository.GetByPredicateAsync(tc => tc.Id == commentDto.Id);
+            if (taskComment == null || !await _permissionService.HasPermissionToGoalAndTask(taskComment.TaskId, userId))
             {
-                throw new NotFoundException("Task was not found.");
+                throw new NotFoundException("Task comment was not found.");
             }
 
             taskComment.Comment = commentDto.Comment != default ? commentDto.Comment : taskComment.Comment;
@@ -54,14 +54,11 @@ namespace PLMS.BLL.ServicesImplementation
 
         public async Task DeleteTaskComment(int id, string userId)
         {
-            TaskComment? taskComment = await _taskCommentRepository.GetByPredicateAsync(tc => tc.Id.Equals(id)) ?? throw new NotFoundException("TaskComment was not found");
-            if (taskComment == null)
+            TaskComment? taskComment = await _taskCommentRepository.GetByPredicateAsync(tc => tc.Id.Equals(id));
+
+            if (taskComment == null || !await _permissionService.HasPermissionToGoalAndTask(taskComment.TaskId, userId))
             {
                 return;
-            }
-            if (!await _permissionService.HasPermissionToGoalAndTask(taskComment.TaskId, userId))
-            {
-                throw new NotFoundException("Task was not found.");
             }
 
             _taskCommentRepository.Remove(taskComment);
@@ -70,16 +67,16 @@ namespace PLMS.BLL.ServicesImplementation
 
         public async Task<GetTaskCommentDto> GetTaskCommentByIdAsync(int id, string userId)
         {
-            var taskComment = await _taskCommentRepository.GetByPredicateAsync(gc => gc.Id.Equals(id)) ?? throw new NotFoundException("Task comment was not found");
+            var taskComment = await _taskCommentRepository.GetByPredicateAsync(gc => gc.Id.Equals(id));
 
-            if (!await _permissionService.HasPermissionToGoal(taskComment.TaskId, userId))
+            if (taskComment == null || !await _permissionService.HasPermissionToGoal(taskComment.TaskId, userId))
             {
                 throw new NotFoundException("Task comment was not found.");
             }
 
-            var goalCommentDto = _mapper.Map<GetTaskCommentDto>(taskComment);
+            var takCommentDto = _mapper.Map<GetTaskCommentDto>(taskComment);
 
-            return goalCommentDto;
+            return takCommentDto;
         }
     }
 }

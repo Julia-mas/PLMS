@@ -34,19 +34,12 @@ namespace PLMS.API.Controllers
                 var errorMessage = string.Join(", ", ModelState.Values.First().Errors.First().ErrorMessage);
                 return ApiResponseHelper.CreateErrorResponse(errorMessage, StatusCodes.Status400BadRequest);
             }
+
             var categoryDto = _mapper.Map<AddCategoryDto>(model);
             string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             categoryDto.UserId = userId;
-            int categoryId;
 
-            try
-            {
-                categoryId = await _categoryService.AddCategoryAsync(categoryDto);
-            }
-            catch (NotFoundException ex)
-            {
-                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
-            }
+            int categoryId = await _categoryService.AddCategoryAsync(categoryDto);
 
             return ApiResponseHelper.CreateOkResponseWithMessage("Category was added successfully", categoryId);
         }
@@ -58,6 +51,7 @@ namespace PLMS.API.Controllers
             {
                 return ApiResponseHelper.CreateValidationErrorResponse(ModelState);
             }
+
             var categoryDto = _mapper.Map<EditCategoryDto>(model);
             categoryDto.Id = id;
 
@@ -81,15 +75,8 @@ namespace PLMS.API.Controllers
         [HttpDelete]
         public async Task<ActionResult> Delete(int id)
         {
-            try
-            {
-                string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                await _categoryService.DeleteCategoryAsync(id, userId);
-            }
-            catch (NotFoundException ex)
-            {
-                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
-            }
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            await _categoryService.DeleteCategoryAsync(id, userId);
 
             return ApiResponseHelper.CreateOkResponseWithMessage<string>("Category was deleted successfully");
         }
@@ -108,11 +95,6 @@ namespace PLMS.API.Controllers
                 return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
             }
 
-            if (!ModelState.IsValid)
-            {
-                ApiResponseHelper.CreateValidationErrorResponse(ModelState);
-            }
-
             var categoryModel = _mapper.Map<GetCategoryViewModel>(categoryDto);
 
             return ApiResponseHelper.CreateOkResponseWithoutMessage(categoryModel);
@@ -128,7 +110,7 @@ namespace PLMS.API.Controllers
             }
 
             var categoryDto = await _categoryService.GetCategorieFilteredAsync(filters);
-            var categoryModel = categoryDto.Select(g => _mapper.Map<GetCategoryViewModel>(g));
+            var categoryModel =  _mapper.Map<IEnumerable<GetCategoryViewModel>>(categoryDto);
 
             return ApiResponseHelper.CreateOkResponseWithoutMessage(categoryModel);
         }

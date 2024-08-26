@@ -1,21 +1,21 @@
 ﻿using FluentValidation;
-using PLMS.API.Models.ModelsTasks;
+using PLMS.API.Models.ModelsGoals;
 using PLMS.Common;
 using PLMS.Common.Enums;
 using PLMS.Common.Extensions;
 
 namespace PLMS.API.Validators
 {
-    public partial class TaskBaseModelValidator : AbstractValidator<TaskBaseModel>
+    public partial class GoalBaseModelValidator : AbstractValidator<GoalBaseModel>
     {
-        public TaskBaseModelValidator()
+        public GoalBaseModelValidator()
         {
             RuleFor(x => x.Title).NotEmpty().WithMessage("Title is required.");
-            RuleFor(x => x.Title).MaximumLength(Constants.Task.TitleMaxLength)
-                .WithMessage($"Title can't exceed [{Constants.Task.TitleMaxLength}] characters.");
+            RuleFor(x => x.Title).MaximumLength(Constants.Goal.TitleMaxLength)
+                .WithMessage($"Title can't exceed [{Constants.Goal.TitleMaxLength}] characters.");
 
-            RuleFor(x => x.Description).MaximumLength(Constants.Task.DescriptionMaxLength)
-                .WithMessage($"Description can't exceed [{Constants.Task.DescriptionMaxLength}] characters.");
+            RuleFor(x => x.Description).MaximumLength(Constants.Goal.DescriptionMaxLength)
+                .WithMessage($"Description can't exceed [{Constants.Goal.DescriptionMaxLength}] characters.");
 
             var priorityIds = EnumExtensions.GetEnumValues<PriorityEnum>().ToArray();
             var statusIds = EnumExtensions.GetEnumValues<StatusEnum>().ToArray();
@@ -28,3 +28,4 @@ namespace PLMS.API.Validators
         }
     }
 }
+

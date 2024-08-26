@@ -10,6 +10,8 @@ namespace PLMS.API.Models.ModelsGoals
         public string StatusTitle { get; set; } = string.Empty;
         public string PriorityTitle { get; set; } = string.Empty;
 
+        public int TaskCount { get; set; }
+
         public List<GetGoalCommentViewModel> GoalComments { get; set; } = new List<GetGoalCommentViewModel>();
     }
 }

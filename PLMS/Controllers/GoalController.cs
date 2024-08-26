@@ -34,6 +34,7 @@ namespace PLMS.API.Controllers
                 var errorMessage = string.Join(", ", ModelState.Values.First().Errors.First().ErrorMessage);
                 return ApiResponseHelper.CreateErrorResponse(errorMessage, StatusCodes.Status400BadRequest);
             }
+
             var goalDto = _mapper.Map<AddGoalDto>(model);
             string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             goalDto.UserId = userId;
@@ -59,6 +60,7 @@ namespace PLMS.API.Controllers
             {
                 return ApiResponseHelper.CreateValidationErrorResponse(ModelState);
             }
+
             var goalDto = _mapper.Map<EditGoalDto>(model);
             goalDto.Id = id;
 
@@ -82,15 +84,8 @@ namespace PLMS.API.Controllers
         [HttpDelete]
         public async Task<ActionResult> Delete(int id)
         {
-            try
-            {
-                string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                await _goalService.DeleteGoalAsync(id, userId);
-            }
-            catch (NotFoundException ex)
-            {
-                return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
-            }
+            string userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            await _goalService.DeleteGoalAsync(id, userId);
 
             return ApiResponseHelper.CreateOkResponseWithMessage<string>("Goal was deleted successfully");
         }
@@ -109,11 +104,6 @@ namespace PLMS.API.Controllers
                 return ApiResponseHelper.CreateErrorResponse(ex.Message, StatusCodes.Status404NotFound);
             }
 
-            if (!ModelState.IsValid)
-            {
-                ApiResponseHelper.CreateValidationErrorResponse(ModelState);
-            }
-
             var goalModel = _mapper.Map<GetGoalViewModel>(goalDto);
 
             return ApiResponseHelper.CreateOkResponseWithoutMessage(goalModel);
@@ -129,7 +119,7 @@ namespace PLMS.API.Controllers
             }
 
             var goalDto = await _goalService.GetFilteredGoalsAsync(filters);
-            var goalModel = goalDto.Select(g => _mapper.Map<GetGoalViewModel>(g));
+            var goalModel = _mapper.Map<List<GetGoalViewModel>>(goalDto);
 
             return ApiResponseHelper.CreateOkResponseWithoutMessage(goalModel);
         }
@@ -144,7 +134,7 @@ namespace PLMS.API.Controllers
             }
 
             var goalInfoDto = await _goalService.GetTaskCompletionPercentageAsync(userId);
-            if (goalInfoDto == null) 
+            if (goalInfoDto == null)
             {
                 return ApiResponseHelper.CreateErrorResponse("Goals were not found!", StatusCodes.Status404NotFound);
             }
