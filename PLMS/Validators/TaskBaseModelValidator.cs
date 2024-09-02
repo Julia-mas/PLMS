@@ -12,7 +12,7 @@ namespace PLMS.API.Validators
         {
             RuleFor(x => x.Title).NotEmpty().WithMessage("Title is required.");
             RuleFor(x => x.Title).MaximumLength(Constants.Task.TitleMaxLength)
-                .WithMessage($"Title can't exceed [{Constants.Task.TitleMaxLength}] characters.");
+                .WithMessage($"Comment can't exceed [{Constants.Task.TitleMaxLength}] characters.");
 
             RuleFor(x => x.Description).MaximumLength(Constants.Task.DescriptionMaxLength)
                 .WithMessage($"Description can't exceed [{Constants.Task.DescriptionMaxLength}] characters.");

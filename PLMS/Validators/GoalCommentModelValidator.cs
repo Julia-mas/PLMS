@@ -23,7 +23,7 @@ namespace PLMS.API.Validators
             {
                 RuleFor(x => x.Comment).NotEmpty().WithMessage("Comment is required.");
                 RuleFor(x => x.Comment).MaximumLength(Constants.Comment.CommentMaxLength)
-                    .WithMessage($"Title can't exceed [{Constants.Comment.CommentMaxLength}] characters.");
+                    .WithMessage($"Comment can't exceed [{Constants.Comment.CommentMaxLength}] characters.");
             }
         }
     }  

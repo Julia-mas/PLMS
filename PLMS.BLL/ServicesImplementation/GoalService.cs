@@ -127,7 +127,7 @@ namespace PLMS.BLL.ServicesImplementation
             var goals = await paginatedQuery.ToListAsync();
 
             var goalsDto = _mapper.Map<List<GetGoalDto>>(goals);
-            goalsDto.ForEach(g => g.GoalComments.Sort());
+            goalsDto.ForEach(g => g.GoalComments = g.GoalComments.OrderByDescending(g => g.CreatedAt).ToList());
 
             return goalsDto;
         }

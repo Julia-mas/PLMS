@@ -175,7 +175,7 @@ namespace PLMS.BLL.ServicesImplementation
 
             // Call to the DB
             var tasks = await paginatedQuery.ToListAsync();
-            tasks.ForEach(t => t.TaskComments.Sort());
+            tasks.ForEach(t => t.TaskComments = t.TaskComments.OrderByDescending(t => t.CreatedAt).ToList());
 
             return tasks;
         }
