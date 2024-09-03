@@ -4,17 +4,14 @@ using PLMS.Common;
 
 namespace PLMS.API.Validators
 {
-    public partial class CommentModelValidator
+    public partial class TaskCommentModelValidator : AbstractValidator<TaskCommentModel>
     {
-        public partial class TaskCommentModelValidator : AbstractValidator<TaskCommentModel>
+        public TaskCommentModelValidator()
         {
-            public TaskCommentModelValidator()
-            {
-                RuleFor(x => x.Comment).NotEmpty().WithMessage("Comment is required.");
-                RuleFor(x => x.Comment).MaximumLength(Constants.Comment.CommentMaxLength)
-                    .WithMessage($"Comment can't exceed [{Constants.Comment.CommentMaxLength}] characters.");
-            }
+            RuleFor(x => x.Comment).NotEmpty().WithMessage("Comment is required.");
+            RuleFor(x => x.Comment).MaximumLength(Constants.Comment.CommentMaxLength)
+                .WithMessage($"Comment can't exceed [{Constants.Comment.CommentMaxLength}] characters.");
         }
-    }  
+    }
 }
 
