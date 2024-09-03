@@ -8,12 +8,15 @@ namespace PLMS.API.Mapper.Profiles
     {
         public CategoryProfile()
         {
-            CreateMap<EditCategoryModel, CategoryDto>()
-                .ForMember(dest => dest.Id, opt => opt.Ignore())
+            CreateMap<GetCategoryDto, GetCategoryViewModel>();
+
+            CreateMap<GetCategoryDto.Goal, GetCategoryViewModel.Goal>();
+
+            CreateMap<CategoryBaseModel, AddCategoryDto>()
                 .ForMember(dest => dest.UserId, opt => opt.Ignore());
 
-            CreateMap<AddCategoryModel, AddCategoryDto>()
-                .ForMember(dest => dest.UserId, opt => opt.Ignore());
+            CreateMap<CategoryBaseModel, EditCategoryDto>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore());
         }
     }
 }

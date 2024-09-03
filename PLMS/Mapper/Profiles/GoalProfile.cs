@@ -8,12 +8,21 @@ namespace PLMS.API.Mapper.Profiles
     {
         public GoalProfile() 
         {
-            CreateMap<GoalBaseModel, GoalBaseDto>()
-                .ForMember(dest => dest.UserId, opt => opt.Ignore());
-
             CreateMap<GoalBaseModel, AddGoalDto>()
+                .ForMember(dest => dest.UserId, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
-                .ForMember(dest => dest.UserId, opt => opt.Ignore());
+                .ReverseMap();
+
+            CreateMap<GoalBaseModel, EditGoalDto>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.UserId, opt => opt.Ignore())
+                .ReverseMap();
+
+            CreateMap<GetGoalDto, GetGoalViewModel>();
+
+            CreateMap<GoalCompletionInfoDto, GoalCompletionInfoModel>();
+
+            CreateMap<GoalCompletionInfoDto.GoalInfoDto, GoalCompletionInfoModel.GoalInfoModel>();
         }
     }
 }

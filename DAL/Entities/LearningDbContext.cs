@@ -31,11 +31,24 @@ namespace PLMS.DAL.Entities
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.Property(p => p.Name).HasMaxLength(100);
+                entity.Property(p => p.Surname).HasMaxLength(200);
+            });
+
             modelBuilder.Entity<User>()
                 .HasMany(u => u.Categories)
                 .WithOne(c => c.User)
                 .HasForeignKey(g => g.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+
+            modelBuilder.Entity<Goal>(entity =>
+            {
+                entity.Property(p => p.Description).HasMaxLength(500);
+                entity.Property(p => p.Title).HasMaxLength(200);
+            });
 
             modelBuilder.Entity<Goal>()
                 .HasMany(u => u.Tasks)
@@ -48,10 +61,23 @@ namespace PLMS.DAL.Entities
                 .WithOne(g => g.Goal)
                 .HasForeignKey(g => g.GoalId);
 
+
+            modelBuilder.Entity<Category>(entity =>
+            {
+                entity.Property(p => p.Title).HasMaxLength(200);
+            });
+
             modelBuilder.Entity<Category>()
                 .HasMany(c => c.Goals)
                 .WithOne(g => g.Category)
                 .HasForeignKey(g => g.CategoryId);
+
+
+            modelBuilder.Entity<Task>(entity =>
+            {
+                entity.Property(p => p.Description).HasMaxLength(500);
+                entity.Property(p => p.Title).HasMaxLength(200);
+            });
 
             modelBuilder.Entity<Task>()
                 .HasMany(t => t.TaskComments)
@@ -81,6 +107,18 @@ namespace PLMS.DAL.Entities
                 .WithOne(g => g.Priority)
                 .HasForeignKey(g => g.PriorityId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+
+            modelBuilder.Entity<TaskComment>(entity =>
+            {
+                entity.Property(p => p.Comment).HasMaxLength(500);
+            });
+
+
+            modelBuilder.Entity<GoalComment>(entity =>
+            {
+                entity.Property(p => p.Comment).HasMaxLength(500);
+            });
 
 
             var statusValues = EnumExtensions.GetEnumValuesAsEnum<StatusEnum>().Select(e => new Status

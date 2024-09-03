@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using PLMS.BLL.DTO.CommentsDto;
+using PLMS.BLL.DTO.TaskCommentsDto;
 using PLMS.DAL.Entities;
 
 namespace PLMS.BLL.Mapper.Profiles
@@ -8,8 +8,12 @@ namespace PLMS.BLL.Mapper.Profiles
     {
         public TaskCommentProfileBll() 
         {
-            CreateMap<TaskCommentDto, TaskComment>()
-                 .ForMember(dest => dest.Task, opt => opt.Ignore()).ReverseMap();
+            CreateMap<AddTaskCommentDto, TaskComment>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.Task, opt => opt.Ignore())
+                .ReverseMap();
+
+            CreateMap<TaskComment, GetTaskCommentDto>();
         }
     }
 }
