@@ -30,16 +30,17 @@ namespace PLMS.BLL.ServicesImplementation
 
         public async Task<int> AddTaskAsync(AddTaskDto taskDto)
         {
-            var task = await _taskRepository.GetByPredicateAsync( t => t.Title == taskDto.Title, t => t.Goal.UserId == taskDto.UserId);
-            if (task != null)
-            {
-                return task.Id;
-            }
             if (!await _permissionService.HasPermissionToGoal(taskDto.GoalId, taskDto.UserId))
             {
                 throw new NotFoundException("Goal was not found.");
             }
 
+            var task = await _taskRepository.GetByPredicateAsync( t => t.Title == taskDto.Title && t.Goal.UserId == taskDto.UserId);
+            if (task != null)
+            {
+                return task.Id;
+            }
+            
             task = _mapper.Map<Task>(taskDto);
             await _taskRepository.CreateAsync(task);
             await _unitOfWork.CommitChangesToDatabaseAsync();
